@@ -533,6 +533,13 @@ class SQLAlchemyDataManager(DataManagerInterface):
             if not event:
                 raise EventNotFoundException(f"Event with ID {event_id} not found.")
 
+            offeror_id = db.query(Contract.offeror_id).filter(Contract.id == event.contract_id)
+            offeror_id = offeror_id[0][0]
+
+            if offeror_id != current_user_id:
+                raise EventUserMismatchException(
+                    f"Event with ID {event_id} does not belong to the current user with ID {current_user_id}.")
+
             return EventPydantic(
                 id=event.id,
                 created_at=event.created_at,
@@ -556,7 +563,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
                 meal_location_address=event.meal_location_address,
                 accommodation_id=event.accommodation_id
             )
-        except EventNotFoundException as e:
+        except (EventNotFoundException, EventUserMismatchException) as e:
             print(e)
             raise e
 
@@ -762,8 +769,26 @@ class SQLAlchemyDataManager(DataManagerInterface):
             raise e  # Re raise the exception to be handled in the route.
 
 
-
-
-    def delete_accommodation(self, accommodation_id: int) -> bool:
+    def delete_accommodation(self, accommodation_id: int, db) -> bool:
         """ Deletes accommodation. """
-        pass
+        try:
+            accommodation = db.query(Accommodation).filter(Accommodation.id == accommodation_id).first()
+
+            if not accommodation:
+                raise AccommodationNotFoundException(f"Accommodation with ID {accommodation_id} not found.")
+            self.session.delete(accommodation)
+            self.session.commit()
+            return True
+
+        except (AccommodationNotFoundException) as e:
+            self.session.rollback()
+            print(e)
+            raise e  # Re raise the exception to be handled in the route.
+        except sqlalchemy.exc.SQLAlchemyError as e:  # Specific database error.
+            self.session.rollback()
+            print(f"Database error deleting event: {e}")
+            raise DatabaseError(f"Database error occurred: {e}")  # Custom exception.
+        except Exception as e:
+            self.session.rollback()
+            print(f"Unexpected error deleting event: {e}")
+            raise DatabaseError(f"An unexpected error occurred: {e}")
