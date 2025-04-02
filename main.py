@@ -17,7 +17,7 @@ from dependencies import get_common_dependencies
 
 from datamanager.exception_classes import ProfileNotFoundException, ProfileUserMismatchException, DatabaseError, \
     ContractNotFoundException, ContractUserMismatchException
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, NoResultFound
 
 app = FastAPI()
 
@@ -144,44 +144,6 @@ async def create_profile(
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
 
 
-@app.put("/profile/{profile_id}", tags=["Profile"])
-async def update_profile(
-    profile_id: int,
-    profile_data: ProfilePydantic,
-    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
-):
-    """
-        :param profile_id: from path query
-        :param profile_data: data from request validated with ProfilePydantic model
-        :param common_dependencies: current_user, data_manager, db
-        :return: update_profile return updated_profile_data or raise an exception.
-        """
-    current_user, db, data_manager = common_dependencies
-    try:
-        updated_profile_data = data_manager.update_profile(profile_id, profile_data, current_user.id, db)
-        return updated_profile_data
-    except ProfileNotFoundException:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found."
-        )
-    except ProfileUserMismatchException:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Profile does not belong to the user."
-        )
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database error."
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
-        )
-
-
 @app.get("/profile/{profile_id}", tags=["Profile"])
 async def get_profile(
     profile_id: int,
@@ -200,24 +162,78 @@ async def get_profile(
     return profile_dict
 
 
+@app.put("/profile/{profile_id}", tags=["Profile"])
+async def update_profile(
+    profile_id: int,
+    profile_data: ProfilePydantic,
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    """
+        :param profile_id: from path query
+        :param profile_data: data from request validated with ProfilePydantic model
+        :param common_dependencies: current_user, data_manager, db
+        :return: update_profile return updated_profile_data or raise an exception.
+        """
+    current_user, db, data_manager = common_dependencies
+    try:
+        updated_profile_data = data_manager.update_profile(profile_id, profile_data, current_user.id, db)
+        return updated_profile_data
+    except ProfileNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Profile not found. {e}"
+        )
+    except ProfileUserMismatchException:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Profile does not belong to the user."
+        )
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error."
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error."
+        )
+
+
 @app.delete("/profile/{profile_id}", tags=["Profile"], response_model=dict)
 def delete_profile_endpoint(
         profile_id: int,
-        data_manager: SQLAlchemyDataManager = Depends(get_data_manager)
+        common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
     """
-    :param data_manager: Imported to call the delete_profile() class method
+    :param common_dependencies: current_user, data_manager, db
     :param profile_id: from path query
     :return: successfully message or Exception
     """
+    current_user, db, data_manager = common_dependencies
     try:
-        if data_manager.delete_profile(profile_id):
-            return {"message": "Profile deleted successfully"}
-        else:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-
-    except DatabaseError as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        data_manager.delete_profile(profile_id, current_user.id, db)
+        return {"message": "Profile deleted successfully"}
+    except ProfileNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Profile not found. {e}"
+        )
+    except ProfileUserMismatchException:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Profile does not belong to the user."
+        )
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error."
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error."
+        )
 
 
 # CONTRACT ROUTES

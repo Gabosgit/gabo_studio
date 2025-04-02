@@ -227,7 +227,8 @@ class SQLAlchemyDataManager(DataManagerInterface):
     def update_profile(
             self, profile_id: int,
             profile_data_to_update: ProfileUpdatePydantic,
-            current_user_id, db: Session)\
+            current_user_id,
+            db: Session)\
             -> Optional[ProfileUpdatePydantic]:
         try:
             profile = db.query(Profile).filter(Profile.id == profile_id).first()
@@ -263,7 +264,6 @@ class SQLAlchemyDataManager(DataManagerInterface):
             profile_data = self.get_profile_by_id(profile_id, db)
             return profile_data
 
-
         except (ProfileNotFoundException, ProfileUserMismatchException) as e:
             print(e)
             raise e  # Re raise the exception to be handled in the route.
@@ -279,17 +279,24 @@ class SQLAlchemyDataManager(DataManagerInterface):
             raise e  # Re raise the exception to be handled in the route.
 
 
-    def delete_profile(self, profile_id: int) -> bool:
+    def delete_profile(self, profile_id: int, current_user_id: int, db: Session) -> bool:
         try:
-            profile = self.session.query(Profile).filter(Profile.id == profile_id).one()
-            # 'one' raises a NoResultFound exception if no matching profile is found.
+            profile = db.query(Profile).filter(Profile.id == profile_id).first()
+
+            if not profile:
+                raise ProfileNotFoundException(f"Profile with ID {profile_id} not found.")
+
+            if profile.user_id != current_user_id:
+                raise ProfileUserMismatchException(
+                    f"Profile with ID {profile_id} does not belong to the current user with ID {current_user_id}.")
+
             self.session.delete(profile)
             self.session.commit()
             return True
 
-        except NoResultFound:
-            self.session.rollback()
-            return False # profile not found.
+        except (ProfileNotFoundException, ProfileUserMismatchException) as e:
+            print(e)
+            raise e  # Re raise the exception to be handled in the route.
         except sqlalchemy.exc.SQLAlchemyError as e:  # Specific database error.
             self.session.rollback()
             print(f"Database error deleting profile: {e}")
@@ -404,7 +411,6 @@ class SQLAlchemyDataManager(DataManagerInterface):
             print(f"General error: {e}")
             raise e  # Re raise the exception to be handled in the route.
 
-
     def get_contract_events(self, contract_id: int, current_user_id: int, db: Session) -> list:
         """
         :param contract_id: to get events
@@ -439,9 +445,6 @@ class SQLAlchemyDataManager(DataManagerInterface):
             db.rollback()
             print(f"General error: {e}")
             raise e  # Re raise the exception to be handled in the route.
-
-
-
 
 
     def soft_delete_contract(self, contract_id: int) -> bool:

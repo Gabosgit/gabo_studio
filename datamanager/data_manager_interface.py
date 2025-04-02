@@ -8,7 +8,7 @@ from typing import Optional
 class DataManagerInterface(ABC):
     """ Defines methods for managing data entities. """
 
-    # User related
+# User related
     @abstractmethod
     def create_user(self, user_data: dict) -> int:  # Returns user ID
         """ Creates a new user. """
@@ -34,13 +34,13 @@ class DataManagerInterface(ABC):
         """ Update user data. """
         pass
 
-
     @abstractmethod
     def delete_user(self, user_id: int) -> bool:
         """ Deletes a user. """
         pass
 
-    # Profile related
+
+# Profile related
     @abstractmethod
     def create_profile(self, profile_data: dict, current_user: dict, db) -> int:
         """ Creates a new profile. """
@@ -57,11 +57,12 @@ class DataManagerInterface(ABC):
         pass
 
     @abstractmethod
-    def delete_profile(self, profile_id: int) -> bool:
+    def delete_profile(self, profile_id: int, current_user_id: int, db) -> bool:
         """ Deletes a profile. """
         pass
 
-    # Contract related
+
+# Contract related
     @abstractmethod
     def create_contract(self, contract_data: dict, current_user: dict, db) -> int:
         """ Creates a new contract. """
@@ -85,7 +86,8 @@ class DataManagerInterface(ABC):
         """ Deletes a contract. """
         pass
 
-    # Event related
+
+# Event related
     @abstractmethod
     def create_event(self, event_data: dict, current_user: dict, db) -> int:
         """ Creates an event. """
@@ -106,7 +108,8 @@ class DataManagerInterface(ABC):
         """ Deletes an event. """
         pass
 
-    # Accommodation related
+
+# Accommodation related
     @abstractmethod
     def create_accommodation(self, event_data: dict, db) -> int:
         """ Creates Accommodation. """

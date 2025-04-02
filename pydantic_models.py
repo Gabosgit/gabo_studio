@@ -5,7 +5,6 @@ from decimal import Decimal
 from iso4217 import Currency # List of currency codes
 import re
 
-
 # USER MODELS
 class UserAuthPydantic(BaseModel):
     id: int
@@ -107,8 +106,6 @@ class ProfileUpdatePydantic(BaseModel):
     audios: List[Optional[HttpUrl]]
     online_press: List[Optional[HttpUrl]]
     website: Optional[HttpUrl] = None  # make website optional.
-
-
 
 
 # CONTRACT MODELS
