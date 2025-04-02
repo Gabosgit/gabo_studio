@@ -1,6 +1,8 @@
 """
     Data manager for SQLAlchemy
 """
+from logging import disable
+
 import sqlalchemy
 from click import Tuple
 from fastapi import HTTPException, status
@@ -341,30 +343,50 @@ class SQLAlchemyDataManager(DataManagerInterface):
             Retrieves a contract by ID.
             Return a dictionary with the contract infos
         """
-        contract = (
-            db.query(Contract)
-            .filter(Contract.id == contract_id)
-            .filter((Contract.offeror_id == current_user_id) | (Contract.offeree_id == current_user_id))
-            .first()
-        )
-        if contract:
+        try:
+            contract = (
+                db.query(Contract)
+                .filter(Contract.id == contract_id)
+                .filter((Contract.offeror_id == current_user_id) | (Contract.offeree_id == current_user_id))
+                .first()
+            )
+            if not contract:
+                raise ContractNotFoundException(f"Contract with ID {contract_id} for current user with ID {current_user_id} not found.")
+
+            if contract.offeror_id != current_user_id:
+                raise ContractUserMismatchException(
+                    f"Contract with ID {contract_id} does not belong to the current user with ID {current_user_id}.")
+
             return ContractPydantic(
-            id=contract.id,
-            created_at=contract.created_at,
-            name=contract.name,
-            offeror_id=contract.offeror_id,
-            offeree_id=contract.offeree_id,
-            total_fee=contract.total_fee,
-            currency_code=contract.currency_code,
-            upon_signing=contract.upon_signing,
-            upon_completion=contract.upon_completion,
-            payment_method=contract.payment_method,
-            travel_expenses=contract.travel_expenses,
-            accommodation_expenses=contract.accommodation_expenses,
-            other_expenses=contract.other_expenses
-        )
-        else:
-            return None
+                id=contract.id,
+                created_at=contract.created_at,
+                name=contract.name,
+                offeror_id=contract.offeror_id,
+                offeree_id=contract.offeree_id,
+                total_fee=contract.total_fee,
+                currency_code=contract.currency_code,
+                upon_signing=contract.upon_signing,
+                upon_completion=contract.upon_completion,
+                payment_method=contract.payment_method,
+                travel_expenses=contract.travel_expenses,
+                accommodation_expenses=contract.accommodation_expenses,
+                other_expenses=contract.other_expenses,
+                disabled=contract.disabled,
+                disabled_at=contract.disabled_at,
+                signed_at=contract.signed_at,
+                delete_at=contract.delete_at
+            )
+        except (ContractNotFoundException, ContractUserMismatchException) as e:
+            print(e)
+            raise e  # Re raise the exception to be handled in the route.
+
+        except SQLAlchemyError as e:
+            print(f"Database error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
+
+        except Exception as e:
+            print(f"General error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
 
 
     def update_contract(
@@ -419,8 +441,11 @@ class SQLAlchemyDataManager(DataManagerInterface):
         :return: tuple with event ids
         """
         try:
-            contract = db.query(Contract).filter(Contract.id == contract_id).one()
+            contract = db.query(Contract).filter(Contract.id == contract_id).first()
             events_in_contract: list = db.query(Event.id).filter(Event.contract_id == contract_id).all()
+
+            if not contract:
+                raise ContractNotFoundException(f"Contract with ID {contract_id} not found.")
 
             if contract.offeror_id != current_user_id:
                 raise ContractUserMismatchException(
@@ -453,7 +478,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
 
 
     # Event related
-    def create_event(self, event_data: EventPydantic, current_user: UserAuthPydantic, db: Session):
+    def create_event(self, event_data: EventPydantic, current_user_id: int, db: Session):
         """
             Creates a new event in the database.
             Validate the input data with EventPydantic and UserAuthPydantic
@@ -485,14 +510,59 @@ class SQLAlchemyDataManager(DataManagerInterface):
             db.commit()
             db.refresh(new_event)
             return new_event.id
-        except Exception as e:
-            db.rollback()
+        except KeyError as e:  # Handle missing keys
+            self.session.rollback()
+            print(f"Missing key in event_data: {e}")
+            raise ValueError(f"Missing key in event_data: {e}")
+        except Exception as e:  # Handle all other errors.
+            self.session.rollback()
+            print(f"An unexpected error occurred: {e}")
+            raise ValueError(f"An unexpected error occurred: {e}")
+
+
+    def get_event_by_id(self, event_id: int, current_user_id: int, db: Session) -> Optional[EventPydantic]:
+        """ Retrieves an event by ID. """
+        try:
+            event = db.query(Event).filter(Event.id == event_id).first()
+
+            if not event:
+                raise EventNotFound(f"Event with ID {event_id} not found.")
+
+            return EventPydantic(
+                id=event.id,
+                created_at=event.created_at,
+                name=event.name,
+                contract_id=event.contract_id,
+                profile_offeror_id=event.profile_offeror_id,
+                profile_offeree_id=event.profile_offeree_id,
+                contact_person=event.contact_person,
+                contact_phone=event.contact_phone,
+                date=event.date,
+                duration=event.duration,
+                start=event.start,
+                end=event.end,
+                arrive=event.arrive,
+                stage_set=event.stage_set,
+                stage_check=event.stage_check,
+                catering_open=event.catering_open,
+                catering_close=event.catering_close,
+                meal_time=event.meal_time,
+                meal_location_name=event.meal_location_name,
+                meal_location_address=event.meal_location_address,
+                accommodation_id=event.accommodation_id
+            )
+        except EventNotFound as e:
+            print(e)
             raise e
 
+        except SQLAlchemyError as e:
+            print(f"Database error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
 
-    def get_event(self, event_id: int) -> Optional[dict]:
-        """ Retrieves an event by ID. """
-        pass
+        except Exception as e:
+            print(f"General error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
+
     def update_event(self, event_id: int, event_data: dict) -> bool:
         """ Updates an event. """
         pass

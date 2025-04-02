@@ -214,6 +214,51 @@ class EventPydantic(BaseModel):
         return date_val
 
 
+class EventUpdatePydantic(BaseModel):
+    name: Optional[str]  # Event name
+    contract_id: Optional[int]
+    profile_offeror_id: Optional[int]
+    profile_offeree_id: Optional[int]
+    contact_person: Optional[str] = None
+    contact_phone: Optional[str] = None
+    date: Optional[date]
+    duration: Optional[timedelta] # format PT1H30M
+    start: Optional[time]
+    end: Optional[time]
+    arrive: Optional[datetime] = None # format 2026-10-27T16:00:00
+    stage_set: Optional[time] = None
+    stage_check: Optional[time] = None
+    catering_open: Optional[time] = None
+    catering_close: Optional[time] = None
+    meal_time: Optional[time] = None
+    meal_location_name: Optional[str]
+    meal_location_address: Optional[str]
+    accommodation_id: Optional[int] = None
+
+    @field_validator("start", "arrive", "stage_set", "stage_check", "catering_open", "catering_close", "meal_time")
+    def validate_time_range(cls, time_val):
+        """ Validate the range of hours to 23 and minutes to 59 """
+        if time_val and time_val.hour < 0 or time_val.hour > 23 or time_val.minute < 0 or time_val.minute > 59:
+            raise ValueError("Time values must be within a valid 24-hour range")
+        return time_val
+
+    @field_validator("duration")
+    def validate_duration(cls, duration):
+        """ Validate an interval greater than 0 """
+        if duration.total_seconds() <= 0:
+            raise ValueError("Duration must be a positive time interval")
+        return duration
+
+    @field_validator("date")
+    def validate_future_date(cls, date_val):
+        """ Validate a date from today """
+        today = date.today()
+        if date_val < today:
+            raise ValueError("Date must be today or in the future")
+        return date_val
+
+
+
 # ACCOMMODATION MODELS
 class AccommodationPydantic(BaseModel):
     id: Optional[int] = None # Optional for creation, required for return.

@@ -94,7 +94,7 @@ class DataManagerInterface(ABC):
         pass
 
     @abstractmethod
-    def get_event(self, event_id: int) -> Optional[dict]:
+    def get_event_by_id(self, event_id: int, current_user: dict, db ) -> Optional[dict]:
         """ Retrieves an event by ID. """
         pass
 
