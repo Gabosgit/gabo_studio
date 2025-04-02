@@ -280,6 +280,25 @@ class AccommodationPydantic(BaseModel):
         return v
 
 
+class AccommodationUpdatePydantic(BaseModel):
+    name: Optional[str]
+    contact_person: Optional[str]
+    address: Optional[str]
+    telephone_number: Optional[str]
+    email: Optional[EmailStr] = None # Email optional.
+    website: Optional[HttpUrl] = None  # make website optional.
+    url: Optional[HttpUrl] = None  # Website optional.
+    check_in: Optional[datetime] = None # format 2026-10-27T16:00:00
+    check_out: Optional[datetime] = None # format 2026-10-27T16:00:00
+
+    @field_validator("telephone_number")
+    def validate_phone_number(cls, v):
+        """ Allow international format with optional spaces and dashes"""
+        if not re.match(r"^\+?\d[\d\s\-]+$", v):
+            raise ValueError("Invalid telephone number format")
+        return v
+
+
 # Referred to TOKEN
 class Token(BaseModel):
     access_token: str

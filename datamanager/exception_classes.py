@@ -24,3 +24,6 @@ class EventNotFoundException(Exception):
 
 class EventUserMismatchException(Exception):
     """Exception raised when an event does not belong to the given user."""
+
+class AccommodationNotFoundException(Exception):
+    """Exception raised when no accommodation is found."""

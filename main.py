@@ -5,6 +5,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from datamanager.models import Accommodation
 from pydantic_models import *
 from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
 from datamanager.database import SessionLocal, get_db
@@ -16,7 +17,8 @@ from Oauth2 import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access
 from dependencies import get_common_dependencies
 
 from datamanager.exception_classes import ProfileNotFoundException, ProfileUserMismatchException, \
-    ContractNotFoundException, ContractUserMismatchException, EventNotFoundException, EventUserMismatchException
+    ContractNotFoundException, ContractUserMismatchException, EventNotFoundException, EventUserMismatchException, \
+    AccommodationNotFoundException
 from sqlalchemy.exc import SQLAlchemyError
 
 app = FastAPI()
@@ -457,3 +459,40 @@ async def create_accommodation(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
+
+@app.get("/accommodation/{accommodation_id}", tags=["Accommodation"])
+async def get_accommodation(
+        accommodation_id: int,
+        common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    try:
+        accommodation_data = data_manager.get_accommodation_by_id(accommodation_id, db)
+        return accommodation_data
+    except AccommodationNotFoundException as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error. {e}"
+        )
+
+@app.put("/accommodation/{accommodation_id}", tags=["Accommodation"])
+async def update_accommodation(
+        accommodation_id: int,
+        accommodation_data: AccommodationUpdatePydantic,
+        common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    try:
+        updated_accommodation_data = data_manager.update_accommodation(accommodation_id, accommodation_data, db)
+        return updated_accommodation_data
+    except AccommodationNotFoundException as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error. {e}"
+        )

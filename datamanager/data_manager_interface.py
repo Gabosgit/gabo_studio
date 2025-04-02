@@ -30,7 +30,7 @@ class DataManagerInterface(ABC):
         pass
 
     @abstractmethod
-    def update_user(self, user_data, current_user_id: int, db):
+    def update_user(self, user_data, current_user_id: int, db) -> Optional[dict]:
         """ Update user data. """
         pass
 
@@ -52,7 +52,7 @@ class DataManagerInterface(ABC):
         pass
 
     @abstractmethod
-    def update_profile(self, profile_id: int, profile_data, current_user_id: int, db) -> bool:
+    def update_profile(self, profile_id: int, profile_data, current_user_id: int, db) -> Optional[dict]:
         """ Updates a profile. """
         pass
 
@@ -111,22 +111,22 @@ class DataManagerInterface(ABC):
 
 # Accommodation related
     @abstractmethod
-    def create_accommodation(self, event_data: dict, db) -> int:
+    def create_accommodation(self, accommodation_data: dict, db) -> int:
         """ Creates Accommodation. """
         pass
 
     @abstractmethod
-    def get_accommodation(self, event_id: int) -> Optional[dict]:
+    def get_accommodation_by_id(self, accommodation_id: int, db) -> Optional[dict]:
         """ Retrieves accommodation by ID. """
         pass
 
     @abstractmethod
-    def update_accommodation(self, accommodation_id: int, accommodation_data: dict) -> bool:
+    def update_accommodation(self, accommodation_id: int, accommodation_data: dict, db) -> Optional[dict]:
         """ Updates accommodation. """
         pass
 
     @abstractmethod
-    def delete_accommodation(self, accommodation_id: int) -> bool:
+    def delete_accommodation(self, accommodation_id: int, db) -> bool:
         """ Deletes accommodation. """
         pass
 

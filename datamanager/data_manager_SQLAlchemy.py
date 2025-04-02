@@ -1,10 +1,8 @@
 """
     Data manager for SQLAlchemy
 """
-from logging import disable
 
 import sqlalchemy
-from click import Tuple
 from fastapi import HTTPException, status
 from pydantic import HttpUrl
 
@@ -15,12 +13,12 @@ from sqlalchemy import exc  # Import exception handling
 from .models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import UserAuthPydantic, ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
-    EventUpdatePydantic
+    EventUpdatePydantic, AccommodationUpdatePydantic
 from datamanager.exception_classes import (ProfileNotFoundException, ProfileUserMismatchException, DatabaseError,
                                            ContractNotFoundException,
                                            ContractUserMismatchException, EventNotFoundException,
-                                           EventUserMismatchException)
-from sqlalchemy.exc import SQLAlchemyError, NoResultFound
+                                           EventUserMismatchException, AccommodationNotFoundException)
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class SQLAlchemyDataManager(DataManagerInterface):
@@ -679,12 +677,93 @@ class SQLAlchemyDataManager(DataManagerInterface):
             db.rollback()
             raise e
 
-    def get_accommodation(self, event_id: int) -> Optional[dict]:
+
+    def get_accommodation_by_id(self, accommodation_id: int, db: Session) -> Optional[AccommodationPydantic]:
         """ Retrieves accommodation by ID. """
-        pass
-    def update_accommodation(self, accommodation_id: int, accommodation_data: dict) -> bool:
+        try:
+            accommodation = db.query(Accommodation).filter(Accommodation.id == accommodation_id).first()
+
+            if not accommodation:
+                raise AccommodationNotFoundException(f"Accommodation with ID {accommodation_id} not found.")
+
+            return AccommodationPydantic(
+                id=accommodation.id,
+                name=accommodation.name,
+                contact_person=accommodation.contact_person,
+                address=accommodation.address,
+                telephone_number=accommodation.telephone_number,
+                email=accommodation.email,
+                website=accommodation.website,
+                url=accommodation.url,
+                check_in=accommodation.check_in,
+                check_out=accommodation.check_out
+            )
+        except AccommodationNotFoundException as e:
+            print(e)
+            raise e
+
+        except SQLAlchemyError as e:
+            print(f"Database error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
+
+        except Exception as e:
+            print(f"General error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
+
+
+    def update_accommodation(
+            self, accommodation_id: int,
+            accommodation_data_to_update: AccommodationUpdatePydantic,
+            db) -> AccommodationPydantic:
         """ Updates accommodation. """
-        pass
+        try:
+            accommodation = db.query(Accommodation).filter(Accommodation.id == accommodation_id).first()
+
+            if not accommodation:
+                raise AccommodationNotFoundException(f"Accommodation with ID {accommodation_id} not found.")
+
+            # Converts Pydantic model to a dictionary.
+            # Excludes any fields that were not provided (unset) in the request.
+            # Uses the exclude_unset=True pydantic method
+            accommodation_data_to_update = accommodation_data_to_update.model_dump(exclude_unset=True)
+
+            # Convert HttpUrl objects to strings
+            # If a value is an HttpUrl object, it's converted to a string using str(value).
+            # If a value is a list of HttpUrl objects, the list is converted to a list of strings.
+            for key, value in accommodation_data_to_update.items():
+                if isinstance(value, HttpUrl):
+                    accommodation_data_to_update[key] = str(value)
+                elif isinstance(value, list) and all(isinstance(item, HttpUrl) for item in value):
+                    accommodation_data_to_update[key] = [str(item) for item in value]
+
+            # Updates the values of the corresponding fields
+            for key, value in accommodation_data_to_update.items():
+                setattr(accommodation, key, value)
+
+            db.commit()
+            db.refresh(accommodation)
+
+            accommodation_data = self.get_accommodation_by_id(accommodation_id, db)
+            return accommodation_data
+
+        except (AccommodationNotFoundException) as e:
+            db.rollback()
+            print(e)
+            raise e # Re raise the exception to be handled in the route.
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Database error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
+
+        except Exception as e:
+            db.rollback()
+            print(f"General error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
+
+
+
+
     def delete_accommodation(self, accommodation_id: int) -> bool:
         """ Deletes accommodation. """
         pass
