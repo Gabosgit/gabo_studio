@@ -14,10 +14,12 @@ from typing import Optional
 from sqlalchemy import exc  # Import exception handling
 from .models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import UserAuthPydantic, ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
-    EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic
+    EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
+    EventUpdatePydantic
 from datamanager.exception_classes import (ProfileNotFoundException, ProfileUserMismatchException, DatabaseError,
                                            ContractNotFoundException,
-                                           ContractUserMismatchException, EventNotFound)
+                                           ContractUserMismatchException, EventNotFoundException,
+                                           EventUserMismatchException)
 from sqlalchemy.exc import SQLAlchemyError, NoResultFound
 
 
@@ -267,6 +269,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             return profile_data
 
         except (ProfileNotFoundException, ProfileUserMismatchException) as e:
+            db.rollback()
             print(e)
             raise e  # Re raise the exception to be handled in the route.
 
@@ -420,6 +423,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             return contract_data
 
         except (ContractNotFoundException, ContractUserMismatchException) as e:
+            db.rollback()
             print(e)
             raise e  # Re raise the exception to be handled in the route.
 
@@ -433,7 +437,10 @@ class SQLAlchemyDataManager(DataManagerInterface):
             print(f"General error: {e}")
             raise e  # Re raise the exception to be handled in the route.
 
-    def get_contract_events(self, contract_id: int, current_user_id: int, db: Session) -> list:
+    def get_contract_events(
+            self, contract_id: int,
+            current_user_id: int,
+            db: Session) -> list:
         """
         :param contract_id: to get events
         :param current_user_id: to check if the contract belongs to the user
@@ -452,12 +459,12 @@ class SQLAlchemyDataManager(DataManagerInterface):
                     f"Contract with ID {contract_id} does not belong to the current user with ID {current_user_id}.")
 
             if not events_in_contract:
-                raise EventNotFound(f"No event found for the contract with ID {contract_id}.")
+                raise EventNotFoundException(f"No event found for the contract with ID {contract_id}.")
 
             # Extract the IDs from the list of tuples in result events_in_contract
             return [event_id[0] for event_id in events_in_contract]
 
-        except (EventNotFound, ContractNotFoundException, ContractUserMismatchException) as e:
+        except (EventNotFoundException, ContractNotFoundException, ContractUserMismatchException) as e:
             print(e)
             raise e  # Re raise the exception to be handled in the route.
 
@@ -526,7 +533,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             event = db.query(Event).filter(Event.id == event_id).first()
 
             if not event:
-                raise EventNotFound(f"Event with ID {event_id} not found.")
+                raise EventNotFoundException(f"Event with ID {event_id} not found.")
 
             return EventPydantic(
                 id=event.id,
@@ -551,7 +558,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
                 meal_location_address=event.meal_location_address,
                 accommodation_id=event.accommodation_id
             )
-        except EventNotFound as e:
+        except EventNotFoundException as e:
             print(e)
             raise e
 
@@ -563,12 +570,86 @@ class SQLAlchemyDataManager(DataManagerInterface):
             print(f"General error: {e}")
             raise e  # Re raise the exception to be handled in the route.
 
-    def update_event(self, event_id: int, event_data: dict) -> bool:
+
+    def update_event(
+            self, event_id: int,
+            event_data_to_update: EventUpdatePydantic,
+            current_user_id: int,
+            db: Session) -> Optional[EventPydantic]:
         """ Updates an event. """
-        pass
-    def delete_event(self, event_id: int) -> bool:
-        """ Deletes an event. """
-        pass
+        try:
+            event = db.query(Event).filter(Event.id == event_id).first()
+
+            if not event:
+                raise EventNotFoundException(f"Event with ID {event_id} not found.")
+
+            offeror_id = db.query(Contract.offeror_id).filter(Contract.id == event.contract_id)
+            offeror_id = offeror_id[0][0]
+
+            if offeror_id != current_user_id:
+                raise EventUserMismatchException(
+                    f"Event with ID {event_id} does not belong to the current user with ID {current_user_id}.")
+
+            # Converts Pydantic model to a dictionary.
+            # Excludes any fields that were not provided (unset) in the request.
+            # Uses the exclude_unset=True pydantic method
+            contract_data_to_update = event_data_to_update.model_dump(exclude_unset=True)
+
+            # Updates the values of the corresponding fields
+            for key, value in contract_data_to_update.items():
+                setattr(event, key, value)
+
+            db.commit()
+            db.refresh(event)
+
+            event_data = self.get_event_by_id(event_id, current_user_id, db)
+            return event_data
+
+        except (EventNotFoundException, EventUserMismatchException) as e:
+            db.rollback()
+            print(e)
+            raise e # Re raise the exception to be handled in the route.
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Database error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
+
+        except Exception as e:
+            db.rollback()
+            print(f"General error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
+
+
+    def delete_event(self, event_id: int, current_user_id: int, db: Session) -> bool:
+        try:
+            event = db.query(Event).filter(Event.id == event_id).first()
+
+            if not event:
+                raise EventNotFoundException(f"Event with ID {event_id} not found.")
+
+            offeror_id = db.query(Contract.offeror_id).filter(Contract.id == event.contract_id)
+            offeror_id = offeror_id[0][0]
+
+            if offeror_id != current_user_id:
+                raise EventUserMismatchException(
+                    f"Event with ID {event_id} does not belong to the current user with ID {current_user_id}.")
+
+            self.session.delete(event)
+            self.session.commit()
+            return True
+
+        except (EventNotFoundException, EventUserMismatchException) as e:
+            print(e)
+            raise e  # Re raise the exception to be handled in the route.
+        except sqlalchemy.exc.SQLAlchemyError as e:  # Specific database error.
+            self.session.rollback()
+            print(f"Database error deleting event: {e}")
+            raise DatabaseError(f"Database error occurred: {e}")  # Custom exception.
+        except Exception as e:
+            self.session.rollback()
+            print(f"Unexpected error deleting event: {e}")
+            raise DatabaseError(f"An unexpected error occurred: {e}")
 
 
     # Accommodation related

@@ -89,22 +89,22 @@ class DataManagerInterface(ABC):
 
 # Event related
     @abstractmethod
-    def create_event(self, event_data: dict, current_user: dict, db) -> int:
+    def create_event(self, event_data: dict, current_user_id: int, db) -> int:
         """ Creates an event. """
         pass
 
     @abstractmethod
-    def get_event_by_id(self, event_id: int, current_user: dict, db ) -> Optional[dict]:
+    def get_event_by_id(self, event_id: int, current_user_id: int, db) -> Optional[dict]:
         """ Retrieves an event by ID. """
         pass
 
     @abstractmethod
-    def update_event(self, event_id: int, event_data: dict) -> bool:
+    def update_event(self, event_id: int, event_data, current_user_id: int, db ) -> Optional[dict]:
         """ Updates an event. """
         pass
 
     @abstractmethod
-    def delete_event(self, event_id: int) -> bool:
+    def delete_event(self, event_id: int, current_user_id: int, db) -> bool:
         """ Deletes an event. """
         pass
 

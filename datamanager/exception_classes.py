@@ -19,5 +19,8 @@ class ContractUserMismatchException(Exception):
     """Exception raised when a contract does not belong to the given user."""
     pass
 
-class EventNotFound(Exception):
+class EventNotFoundException(Exception):
     """Exception raised when no event is found."""
+
+class EventUserMismatchException(Exception):
+    """Exception raised when an event does not belong to the given user."""

@@ -16,7 +16,7 @@ from Oauth2 import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access
 from dependencies import get_common_dependencies
 
 from datamanager.exception_classes import ProfileNotFoundException, ProfileUserMismatchException, \
-    ContractNotFoundException, ContractUserMismatchException, EventNotFound
+    ContractNotFoundException, ContractUserMismatchException, EventNotFoundException, EventUserMismatchException
 from sqlalchemy.exc import SQLAlchemyError
 
 app = FastAPI()
@@ -377,7 +377,7 @@ async def get_event(
     try:
         event_data = data_manager.get_event_by_id(event_id, current_user.id, db)
         return event_data
-    except EventNotFound as e:
+    except EventNotFoundException as e:
         print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -387,16 +387,55 @@ async def get_event(
         )
 
 
-
 @app.put("/event/{event_id}", tags=["Event"])
-async def update_event(event: EventUpdatePydantic):
-    event_dict = event.model_dump()
-    return event_dict
+async def update_event(
+        event_id: int,
+        event_data_to_update: EventUpdatePydantic,
+        common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    try:
+        updated_event_data = data_manager.update_event(event_id, event_data_to_update, current_user.id, db)
+        return updated_event_data
+    except EventNotFoundException as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error. {e}"
+        )
 
 
 @app.delete("/event/{event_id}", tags=["Event"])
-async def delete_event():
-    return {"message": "Delete Event"}
+async def delete_event(
+        event_id: int,
+        common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    try:
+        data_manager.delete_event(event_id, current_user.id, db)
+        return {"message": "Event deleted successfully"}
+    except EventNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Event not found. {e}"
+        )
+    except EventUserMismatchException:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Event does not belong to the current user."
+        )
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error. {e}"
+        )
 
 
 # ACCOMMODATION ROUTES
