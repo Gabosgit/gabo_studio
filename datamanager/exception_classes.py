@@ -1,3 +1,7 @@
+class UserNotFoundException(Exception):
+    """Exception raised when an user with the given ID is not found."""
+    pass
+
 class ProfileNotFoundException(Exception):
     """Exception raised when a profile with the given ID is not found."""
     pass

@@ -17,7 +17,8 @@ from pydantic_models import UserAuthPydantic, ProfilePydantic, ContractPydantic,
 from datamanager.exception_classes import (ProfileNotFoundException, ProfileUserMismatchException, DatabaseError,
                                            ContractNotFoundException,
                                            ContractUserMismatchException, EventNotFoundException,
-                                           EventUserMismatchException, AccommodationNotFoundException)
+                                           EventUserMismatchException, AccommodationNotFoundException,
+                                           UserNotFoundException)
 from sqlalchemy.exc import SQLAlchemyError
 
 
@@ -54,9 +55,8 @@ class SQLAlchemyDataManager(DataManagerInterface):
             self.session.commit()
             return new_user.iy
 
-
         # IntegrityError is a reporting from SQLAlchemy
-        except exc.IntegrityError as e:  # Handle unique constraint violations EX: username or email already exists
+        except exc.IntegrityError:  # Handle unique constraint violations EX: username or email already exists
             self.session.rollback()
             raise ValueError(f"Username '{user_data.username}' or email '{user_data.email_address}' already exists.") # Or other exception.
         except KeyError as e: # Handle missing keys
@@ -144,7 +144,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             user = db.query(User).filter(User.id == current_user_id).first()
 
             if not user:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+                raise UserNotFoundException(f"User with ID {current_user_id} not found.")
 
             # Converts Pydantic model to a dictionary.
             # Excludes any fields that were not provided (unset) in the request.
@@ -159,9 +159,20 @@ class SQLAlchemyDataManager(DataManagerInterface):
             user_data = self.get_user_by_id(current_user_id, db)
             return user_data
 
+        except exc.IntegrityError:  # Handle unique constraint violations EX: username or email already exists
+            db.rollback()
+            raise ValueError(f"Username {user_data_to_update['username']} or email {user_data_to_update['email_address']} already exists.") # Or other exception.
+        except UserNotFoundException as e:
+            db.rollback()
+            print(f"Database error: {e}")
+            raise e
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Database error: {e}")
+            raise e  # Re raise the exception to be handled in the route.
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+            raise e
 
 
     def delete_user(self, user_id: int) -> bool:
@@ -310,7 +321,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             raise DatabaseError(f"An unexpected error occurred: {e}")
 
 
-    # Contract related
+# Contract related
     def create_contract(self, contract_data: ContractPydantic, current_user: UserAuthPydantic, db: Session):
         """
         Creates a new contract in the database.
@@ -482,7 +493,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
         pass
 
 
-    # Event related
+# Event related
     def create_event(self, event_data: EventPydantic, current_user_id: int, db: Session):
         """
             Creates a new event in the database.
@@ -657,7 +668,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             raise DatabaseError(f"An unexpected error occurred: {e}")
 
 
-    # Accommodation related
+# Accommodation related
     def create_accommodation(self, accommodation_data: AccommodationPydantic, db: Session) -> int:
         """
             Creates new accommodation in the database.

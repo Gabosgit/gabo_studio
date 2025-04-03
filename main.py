@@ -18,7 +18,7 @@ from dependencies import get_common_dependencies
 
 from datamanager.exception_classes import ProfileNotFoundException, ProfileUserMismatchException, \
     ContractNotFoundException, ContractUserMismatchException, EventNotFoundException, EventUserMismatchException, \
-    AccommodationNotFoundException
+    AccommodationNotFoundException, UserNotFoundException
 from sqlalchemy.exc import SQLAlchemyError
 
 app = FastAPI()
@@ -107,8 +107,31 @@ async def update_user(
     :return: user data
     """
     current_user, db, data_manager = common_dependencies
-    user_data = data_manager.update_user(user_data_to_update, current_user.id, db)
-    return user_data
+
+    try:
+        user_data = data_manager.update_user(user_data_to_update, current_user.id, db)
+        return user_data
+    except UserNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found. {e}"
+        )
+    except ValueError as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e))
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error. {e}"
+        )
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error. {e}"
+        )
 
 
 @app.get("/users/me/", response_model=UserNoPwdPydantic, tags=["User"]) # response_model=User: This specifies that the route's response should be serialized into a User Pydantic model.
