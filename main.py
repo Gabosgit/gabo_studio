@@ -1,11 +1,13 @@
 """
     API to manage Users, User-Profiles, User_Contracts, User_Events, and Accommodations
 """
-from fastapi import FastAPI, Depends, HTTPException, status
+import os
+
+from fastapi import Depends, APIRouter, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from datamanager.models import Accommodation
+from datamanager.exceptions_handler import register_exception_handlers, handle_exceptions
 from pydantic_models import *
 from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
 from datamanager.database import SessionLocal, get_db
@@ -16,12 +18,12 @@ from datetime import timedelta, datetime
 from Oauth2 import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token
 from dependencies import get_common_dependencies
 
-from datamanager.exception_classes import ProfileNotFoundException, ProfileUserMismatchException, \
-    ContractNotFoundException, ContractUserMismatchException, EventNotFoundException, EventUserMismatchException, \
-    AccommodationNotFoundException, UserNotFoundException
+from datamanager.exception_classes import EventNotFoundException, EventUserMismatchException, AccommodationNotFoundException
 from sqlalchemy.exc import SQLAlchemyError
 
 app = FastAPI()
+register_exception_handlers(app) #register the handlers.
+router = APIRouter()
 
 @app.get("/", tags=["Home"])
 async def root():
@@ -81,19 +83,19 @@ async def sign_up(
         )
 
 
-@app.patch("/user", tags=["User"])
-async def resign_soft_delete(
-    deactivation_date: datetime,
+@app.get("/users/me/", response_model=UserNoPwdPydantic, tags=["User"])
+async def get_user_me(
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
     """
+    The "Authorization" header is sent by the client in the GET request to /users/me/,
+    and the get_current_active_user dependency uses it to authenticate and retrieve the user's information.
     :param common_dependencies: current_user, data_manager, db
-    :param deactivation_date: query parameter
-    :return: dict response or HTTPException
+    :return: user's information
     """
     current_user, db, data_manager = common_dependencies
-    response = data_manager.set_user_deactivation_date(deactivation_date,current_user.id, db)
-    return response
+    user = data_manager.get_user_by_id(current_user.id, db)
+    return user
 
 
 @app.put("/user", tags=["User"])
@@ -108,45 +110,45 @@ async def update_user(
     """
     current_user, db, data_manager = common_dependencies
 
-    try:
-        user_data = data_manager.update_user(user_data_to_update, current_user.id, db)
-        return user_data
-    except UserNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found. {e}"
-        )
-    except ValueError as e:
-        print(e)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e))
-    except SQLAlchemyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error. {e}"
-        )
-    except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error. {e}"
-        )
+    user_data = data_manager.update_user(user_data_to_update, current_user.id, db)
+    return user_data
+    # except ValueError as e:
+    #     print(e)
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=str(e))
+    # except SQLAlchemyError as e:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail=f"Database error. {e}"
+    #     )
+    # except Exception as e:
+    #     print(e)
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail=f"Internal server error. {e}"
+    #     )
 
 
-@app.get("/users/me/", response_model=UserNoPwdPydantic, tags=["User"]) # response_model=User: This specifies that the route's response should be serialized into a User Pydantic model.
-async def get_user_me(
-    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+@app.patch("/user", tags=["User"])
+async def soft_delete_user(
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)],
+    deactivation_date: Optional[datetime] = None
 ):
     """
-    The "Authorization" header is sent by the client in the GET request to /users/me/,
-    and the get_current_active_user dependency uses it to authenticate and retrieve the user's information.
     :param common_dependencies: current_user, data_manager, db
-    :return: user's information
+    :param deactivation_date: query parameter
+    :return: confirmation dict response or HTTPException
     """
     current_user, db, data_manager = common_dependencies
-    user = data_manager.get_user_by_id(current_user.id, db)
-    return user
+
+    response = data_manager.soft_delete_user(deactivation_date, current_user.id, db)
+    return response
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail=f"Internal Server Error: {e}")
+
 
 
 # PROFILE ROUTES
@@ -164,12 +166,16 @@ async def create_profile(
     try:
         id_profile = data_manager.create_profile(profile_data, current_user.id, db)
         return {"profile_id": id_profile}
+    except ValueError as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
 
 
 @app.get("/profile/{profile_id}", tags=["Profile"])
+@handle_exceptions
 async def get_profile(
     profile_id: int,
     db: Session = Depends(get_db),
@@ -182,12 +188,11 @@ async def get_profile(
     :return:
     """
     profile_dict = data_manager.get_profile_by_id(profile_id, db)
-    if profile_dict is None:
-        raise HTTPException(status_code=404, detail="Profile not found")
     return profile_dict
 
 
 @app.put("/profile/{profile_id}", tags=["Profile"])
+@handle_exceptions
 async def update_profile(
     profile_id: int,
     profile_data: ProfilePydantic,
@@ -200,32 +205,13 @@ async def update_profile(
         :return: update_profile return updated_profile_data or raise an exception.
         """
     current_user, db, data_manager = common_dependencies
-    try:
-        updated_profile_data = data_manager.update_profile(profile_id, profile_data, current_user.id, db)
-        return updated_profile_data
-    except ProfileNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Profile not found. {e}"
-        )
-    except ProfileUserMismatchException:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Profile does not belong to the user."
-        )
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database error."
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
-        )
+    updated_profile_data = data_manager.update_profile(profile_id, profile_data, current_user.id, db)
+    return updated_profile_data
+
 
 
 @app.delete("/profile/{profile_id}", tags=["Profile"], response_model=dict)
+@handle_exceptions
 def delete_profile_endpoint(
         profile_id: int,
         common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
@@ -236,29 +222,8 @@ def delete_profile_endpoint(
     :return: successfully message or Exception
     """
     current_user, db, data_manager = common_dependencies
-    try:
-        data_manager.delete_profile(profile_id, current_user.id, db)
-        return {"message": "Profile deleted successfully"}
-    except ProfileNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Profile not found. {e}"
-        )
-    except ProfileUserMismatchException:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Profile does not belong to the user."
-        )
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database error."
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
-        )
+    data_manager.delete_profile(profile_id, current_user.id, db)
+    return {"message": "Profile deleted successfully"}
 
 
 # CONTRACT ROUTES
@@ -282,6 +247,7 @@ async def create_contract(
 
 
 @app.get("/contract/{contract_id}", tags=["Contract"])
+@handle_exceptions
 async def get_contract(
     contract_id: int,
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
@@ -292,34 +258,14 @@ async def get_contract(
     :return: Dictionary with contract infos
     """
     current_user, db, data_manager = common_dependencies
+    contract_dict = data_manager.get_contract_by_id(contract_id, current_user.id, db)
+    events_in_contract = data_manager.get_contract_events(contract_id, current_user.id, db)
+    return {"contract_data": contract_dict, "contract_event_ids": events_in_contract}
 
-    try:
-        contract_dict = data_manager.get_contract_by_id(contract_id, current_user.id, db)
-        events_in_contract = data_manager.get_contract_events(contract_id, current_user.id, db)
-        return {"contract_data": contract_dict, "contract_event_ids": events_in_contract}
-    except ContractNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Contract not found. {e}"
-        )
-    except ContractUserMismatchException:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Contract does not belong to the user."
-        )
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database error."
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
-        )
 
 
 @app.put("/contract/{contract_id}", tags=["Contract"])
+@handle_exceptions
 async def update_contract(
     contract_id: int,
     contract_data: ContractUpdatePydantic,
@@ -332,35 +278,28 @@ async def update_contract(
     :return: updated data or exception
     """
     current_user, db, data_manager = common_dependencies
+    update_contract_data = data_manager.update_contract(contract_id, contract_data, current_user.id, db)
+    return update_contract_data
 
-    try:
-        update_contract_data = data_manager.update_contract(contract_id, contract_data, current_user.id, db)
-        return update_contract_data
-    except ContractNotFoundException:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contract not found."
-        )
-    except ContractUserMismatchException:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Contract does not belong to the user."
-        )
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database error."
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
-        )
 
 
 @app.patch("/contract/{contract_id}", tags=["Contract"])
-async def soft_delete_contract():
-    pass
+@handle_exceptions
+async def disable_contract(
+    contract_id: int,
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)],
+    disable_at
+):
+    """
+    :param contract_id: from path query
+    :param disable_at: from query parameter
+    :param common_dependencies: current_user, data_manager, db
+    :return: confirmation dict response or HTTPException
+    """
+    current_user, db, data_manager = common_dependencies
+    response = data_manager.disable_contract(contract_id, disable_at, current_user.id, db)
+    return response
+
 
 
 @app.get("/contract/itinerary", tags=["Contract"])
@@ -399,20 +338,9 @@ async def get_event(
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
     current_user, db, data_manager = common_dependencies
-    try:
-        event_data = data_manager.get_event_by_id(event_id, current_user.id, db)
-        return event_data
-    except EventNotFoundException as e:
-        print(e)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except EventUserMismatchException as e:
-        print(e)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error. {e}"
-        )
+    event_data = data_manager.get_event_by_id(event_id, current_user.id, db)
+    return event_data
+
 
 
 @app.put("/event/{event_id}", tags=["Event"])

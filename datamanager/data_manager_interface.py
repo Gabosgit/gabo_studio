@@ -19,13 +19,9 @@ class DataManagerInterface(ABC):
         """ Retrieves a user by ID. """
         pass
 
-    @abstractmethod
-    def get_user_by_username(self, username: str, db) -> Optional[dict]:
-        """ Retrieves a user by username."""
-        pass
 
     @abstractmethod
-    def set_user_deactivation_date(self,deactivation_date, user_data: dict, db) -> bool:
+    def soft_delete_user(self,deactivation_date, user_data: dict, db) -> dict:
         """ Sets user deactivation date. """
         pass
 
@@ -82,7 +78,7 @@ class DataManagerInterface(ABC):
         pass
 
     @abstractmethod
-    def soft_delete_contract(self, contract_id: int) -> bool:
+    def disable_contract(self, contract_id: int, disabled_at, current_user_id, db) -> dict:
         """ Deletes a contract. """
         pass
 
