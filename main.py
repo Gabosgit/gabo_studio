@@ -1,7 +1,6 @@
 """
     API to manage Users, User-Profiles, User_Contracts, User_Events, and Accommodations
 """
-import os
 
 from fastapi import Depends, APIRouter, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -23,6 +22,7 @@ app = FastAPI()
 register_exception_handlers(app) #register the handlers.
 router = APIRouter()
 
+# ROOT ROUTE
 @app.get("/", tags=["Home"])
 async def root():
     """ Welcome message """
@@ -67,7 +67,7 @@ async def sign_up(
     """
     :param user_data: dict with all user date from the post request
     :param data_manager: to call the create_user() function from data_manager_SQL_Alchemy.py
-    :return: ID of the created user.
+    :return: id new user or HTTPException
     """
     user_id = data_manager.create_user(user_data)
     return {"user_id": user_id} # FastAPI automatically converts the Python dictionary {"user_id": user_id} into a JSON response
@@ -82,7 +82,7 @@ async def get_user_me(
     The "Authorization" header is sent by the client in the GET request to /users/me/,
     and the get_current_active_user dependency uses it to authenticate and retrieve the user's information.
     :param common_dependencies: current_user, data_manager, db
-    :return: user's information
+    :return: current user data or HTTPException
     """
     current_user, db, data_manager = common_dependencies
     user = data_manager.get_user_by_id(current_user.id, db)
@@ -98,11 +98,11 @@ async def update_user(
     """
     :param user_data_to_update: dict with fields to update
     :param common_dependencies: current_user, data_manager, db
-    :return: user data
+    :return: updated user data or HTTPException
     """
     current_user, db, data_manager = common_dependencies
-    user_data = data_manager.update_user(user_data_to_update, current_user.id, db)
-    return user_data
+    updated_user_data = data_manager.update_user(user_data_to_update, current_user.id, db)
+    return updated_user_data
 
 
 @app.patch("/user", tags=["User"])
@@ -114,7 +114,7 @@ async def soft_delete_user(
     """
     :param common_dependencies: current_user, data_manager, db
     :param deactivation_date: query parameter
-    :return: confirmation dict response or HTTPException
+    :return: confirmation dict response with user id, user name and deactivation date or HTTPException
     """
     current_user, db, data_manager = common_dependencies
     response = data_manager.soft_delete_user(deactivation_date, current_user.id, db)
@@ -131,7 +131,7 @@ async def create_profile(
     """
     :param profile_data: data from request validated with ProfilePydantic model
     :param common_dependencies: current_user, data_manager, db
-    :return: profile ID
+    :return: id new profiler or HTTPException
     """
     current_user, db, data_manager = common_dependencies
     id_profile = data_manager.create_profile(profile_data, current_user.id, db)
@@ -149,7 +149,7 @@ async def get_profile(
     :param profile_id: from patch request int
     :param db: database
     :param data_manager: Imported to call the get_profile() class method
-    :return:
+    :return: profile data or HTTPException
     """
     profile_dict = data_manager.get_profile_by_id(profile_id, db)
     return profile_dict
@@ -166,7 +166,7 @@ async def update_profile(
         :param profile_id: from path query
         :param profile_data: data from request validated with ProfilePydantic model
         :param common_dependencies: current_user, data_manager, db
-        :return: update_profile return updated_profile_data or raise an exception.
+        :return: updated profile data or HTTPException
         """
     current_user, db, data_manager = common_dependencies
     updated_profile_data = data_manager.update_profile(profile_id, profile_data, current_user.id, db)
@@ -182,7 +182,7 @@ async def delete_profile(
     """
     :param common_dependencies: current_user, data_manager, db
     :param profile_id: from path query
-    :return: successfully message or Exception
+    :return: successfully message or HTTPException
     """
     current_user, db, data_manager = common_dependencies
     data_manager.delete_profile(profile_id, current_user.id, db)
@@ -199,7 +199,7 @@ async def create_contract(
     """
     :param contract_data: data from body request validated with ContractPydantic model
     :param common_dependencies: current_user, data_manager, db
-    :return: id contract
+    :return: id new contract or HTTPException
     """
     current_user, db, data_manager = common_dependencies
     id_contract = data_manager.create_contract(contract_data, current_user, db)
@@ -215,7 +215,7 @@ async def get_contract(
     """
     :param contract_id: from path request
     :param common_dependencies: current_user, data_manager, db
-    :return: Dictionary with contract infos
+    :return: contract data and events in contract or HTTPException
     """
     current_user, db, data_manager = common_dependencies
     contract_dict = data_manager.get_contract_by_id(contract_id, current_user.id, db)
@@ -234,7 +234,7 @@ async def update_contract(
     :param contract_id: from path query
     :param contract_data: from body request
     :param common_dependencies: current_user, data_manager, db
-    :return: updated data or exception
+    :return: updated data or HTTPException
     """
     current_user, db, data_manager = common_dependencies
     update_contract_data = data_manager.update_contract(contract_id, contract_data, current_user.id, db)
@@ -275,7 +275,7 @@ async def create_event(
     """
     :param event_data: from request body
     :param common_dependencies: current_user, data_manager, db
-    :return: id created event
+    :return: id created event or HTTPException
     """
     current_user, db, data_manager = common_dependencies
     id_event = data_manager.create_event(event_data, current_user, db)
@@ -288,6 +288,11 @@ async def get_event(
     event_id: int,
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
+    """
+    :param event_id: from path query
+    :param common_dependencies: data_base, current_user, db
+    :return: event data or HTTPException
+    """
     current_user, db, data_manager = common_dependencies
     event_data = data_manager.get_event_by_id(event_id, current_user.id, db)
     return event_data
@@ -300,6 +305,12 @@ async def update_event(
         event_data_to_update: EventUpdatePydantic,
         common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
+    """
+    :param event_id: from path query
+    :param event_data_to_update: body query
+    :param common_dependencies: data_manager, current_user, db
+    :return: updated event data or HTTPException
+    """
     current_user, db, data_manager = common_dependencies
     updated_event_data = data_manager.update_event(event_id, event_data_to_update, current_user.id, db)
     return updated_event_data
@@ -311,10 +322,14 @@ async def delete_event(
         event_id: int,
         common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
+    """
+    :param event_id: from path query
+    :param common_dependencies: data_manager, current_user, db
+    :return: confirmation message or HTTPException
+    """
     current_user, db, data_manager = common_dependencies
     data_manager.delete_event(event_id, current_user.id, db)
     return {"message": "Event deleted successfully"}
-
 
 
 # ACCOMMODATION ROUTES
@@ -329,7 +344,7 @@ async def create_accommodation(
     :param accommodation_data: from request body
     :param db: database
     :param data_manager: Imported to call create_accommodation() class method
-    :return: id created accommodation
+    :return: id new accommodation or HTTPException
     """
     id_accommodation = data_manager.create_accommodation(accommodation_data, db)
     return {"accommodation_id": id_accommodation}
@@ -341,6 +356,11 @@ async def get_accommodation(
         accommodation_id: int,
         common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
+    """
+    :param accommodation_id: from path query
+    :param common_dependencies: data_manager, current_user, db
+    :return: accommodation data or HTTPException
+    """
     current_user, db, data_manager = common_dependencies
     accommodation_data = data_manager.get_accommodation_by_id(accommodation_id, db)
     return accommodation_data
@@ -353,6 +373,12 @@ async def update_accommodation(
         accommodation_data: AccommodationUpdatePydantic,
         common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
+    """
+    :param accommodation_id:  from path query
+    :param accommodation_data: from body query
+    :param common_dependencies: data_manager, current_user, db
+    :return: updated accommodation data or HTTPException
+    """
     current_user, db, data_manager = common_dependencies
     updated_accommodation_data = data_manager.update_accommodation(accommodation_id, accommodation_data, db)
     return updated_accommodation_data
@@ -364,6 +390,11 @@ async def delete_accommodation(
         accommodation_id: int,
         common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
+    """
+    :param accommodation_id:  from path query
+    :param common_dependencies: data_manager, current_user, db
+    :return: confirmation message or HTTPException
+    """
     current_user, db, data_manager = common_dependencies
     data_manager.delete_accommodation(accommodation_id, db)
     return {"message": "Accommodation deleted successfully"}
