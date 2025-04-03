@@ -9,6 +9,8 @@ from datamanager.exception_classes import (
     ResourceNotFoundException,
     ResourceUserMismatchException, ResourcesMismatchException
 )
+from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation
 
 
 # Custom exception handlers (application-wide)
@@ -36,15 +38,6 @@ def register_exception_handlers(app: FastAPI):
             content={"message": str(exc)}
         )
 
-    @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
-        errors = exc.errors()
-        print(f"Validation Error: {errors}")  # Print to terminal
-        return JSONResponse(
-            status_code=422,
-            content={"detail": f"{errors}"}
-        )
-
     @app.exception_handler(ValidationError)
     async def pydantic_validation_exception_handler(request: Request, exc: ValidationError):
         errors = exc.errors()
@@ -53,6 +46,20 @@ def register_exception_handlers(app: FastAPI):
             status_code=422,
             content={"detail": f"{errors}"}
         )
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_error_handler(request: Request, exc: IntegrityError):
+        if isinstance(exc.orig, UniqueViolation):
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Username or email already exists"},
+            )
+        else:
+            # Handle other types of IntegrityError if needed
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Database integrity error"},
+            )
 
 
 def handle_exceptions(func):
@@ -71,6 +78,10 @@ def handle_exceptions(func):
         except ResourcesMismatchException as e:
             print(f"{e}\n"
                   f"ResourcesMismatchException")
+            raise e
+        except IntegrityError as e:
+            print(f"{e}\n"
+                  f"IntegrityError: Attempt has been made to enter a value that already exists in the database as a unique value.")
             raise e
         except ValidationError as e:
             print(f"{e}\n"

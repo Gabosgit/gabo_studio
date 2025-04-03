@@ -14,38 +14,8 @@ from .models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import UserAuthPydantic, ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
     EventUpdatePydantic, AccommodationUpdatePydantic
-from datamanager.exception_classes import (DatabaseError, ContractNotFoundException, ContractUserMismatchException, EventNotFoundException,
-                                           EventUserMismatchException, AccommodationNotFoundException, ResourceNotFoundException,
-                                           ResourceUserMismatchException, ResourcesMismatchException)
+from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException, ResourcesMismatchException)
 from sqlalchemy.exc import SQLAlchemyError
-
-
-# Static functions
-def get_contract_events(
-        contract_id: int,
-        current_user_id: int,
-        db: Session) -> list:
-    """
-    :param contract_id: to get events
-    :param current_user_id: to check if the contract belongs to the user
-    :param db: database
-    :return: tuple with event ids
-    """
-    contract = db.query(Contract).filter(Contract.id == contract_id).first()
-    events_in_contract: list = db.query(Event.id).filter(Event.contract_id == contract_id).all()
-
-    if not contract:
-        raise ResourceNotFoundException(resource_name="Contract", resource_id=contract_id)
-
-    if contract.offeror_id != current_user_id:
-        raise ResourceUserMismatchException(resource_name="Contract", resource_id=contract_id,
-                                            user_id=current_user_id)
-
-    if not events_in_contract:
-        raise ResourcesMismatchException(resource_name_A="Event", resource_name_B="Contract", resource_id_B=contract_id)
-
-    # Extract the IDs from the list of tuples in result events_in_contract
-    return [event_id[0] for event_id in events_in_contract]
 
 
 class SQLAlchemyDataManager(DataManagerInterface):
@@ -308,6 +278,31 @@ class SQLAlchemyDataManager(DataManagerInterface):
         except Exception as e:
             db.rollback()
             raise e
+
+
+    def get_contract_events(self, contract_id: int, current_user_id: int, db: Session) -> list:
+        """
+        :param contract_id: to get events
+        :param current_user_id: to check if the contract belongs to the user
+        :param db: database
+        :return: tuple with event ids
+        """
+        contract = db.query(Contract).filter(Contract.id == contract_id).first()
+        events_in_contract: list = db.query(Event.id).filter(Event.contract_id == contract_id).all()
+
+        if not contract:
+            raise ResourceNotFoundException(resource_name="Contract", resource_id=contract_id)
+
+        if contract.offeror_id != current_user_id:
+            raise ResourceUserMismatchException(resource_name="Contract", resource_id=contract_id,
+                                                user_id=current_user_id)
+
+        if not events_in_contract:
+            raise ResourcesMismatchException(resource_name_A="Event", resource_name_B="Contract",
+                                             resource_id_B=contract_id)
+
+        # Extract the IDs from the list of tuples in result events_in_contract
+        return [event_id[0] for event_id in events_in_contract]
 
 
     def get_contract_by_id(self, contract_id: int, current_user_id: int, db: Session) -> Optional[ContractPydantic]:
