@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-import datamanager.models
+from datamanager import models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -16,12 +16,12 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-""" Modify env.py in the alembic directory to import your SQLAlchemy models and set up the target metadata. """
+""" Modify env.py in the alembic directory to import your SQLAlchemy models and set up the target metadata."""
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = datamanager.models.Base.metadata
+target_metadata = models.Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

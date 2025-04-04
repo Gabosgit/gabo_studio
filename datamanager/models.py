@@ -26,7 +26,7 @@ class User(Base):
     bank_account: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_active: Mapped[Optional[bool]] = mapped_column(default=True)
     deactivation_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # date and time.
-    delete_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # date and time.
+    delete_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # date and time.
 
     profiles: Mapped[List["Profile"]] = relationship(back_populates="user")
 
@@ -70,7 +70,7 @@ class Contract(Base):
     disabled: Mapped[Optional[bool]] = mapped_column(default=False)
     disabled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # date and time.
     signed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # Timezone-aware datetime
-    delete_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # date and time.
+    delete_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # date and time.
 
 
 class Event(Base):

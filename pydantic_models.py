@@ -25,7 +25,7 @@ class UserCreatePydantic(BaseModel):
     bank_account: Optional[str] = None # IBAN
     is_active: bool = Field(True)  # Default to True
     deactivation_date: Optional[datetime] = None  # format 2026-10-27T16:00:00
-    delete_at: Optional[datetime] = None  # format 2026-10-27T16:00:00
+    delete_date: Optional[datetime] = None  # format 2026-10-27T16:00:00
 
     @field_validator("phone_number")
     def validate_phone_number(cls, v):
@@ -47,7 +47,7 @@ class UserNoPwdPydantic(BaseModel):
     bank_account: Optional[str] = None
     is_active: bool
     deactivation_date: Optional[datetime] = None  # format 2026-10-27T16:00:00
-    delete_at: Optional[datetime] = None  # format 2026-10-27T16:00:00
+    delete_date: Optional[datetime] = None  # format 2026-10-27T16:00:00
 
     @field_validator("phone_number")
     def validate_phone_number(cls, v):
@@ -68,7 +68,7 @@ class UserUpdatePydantic(BaseModel):
     bank_account: Optional[str] = None
     is_active: Optional[bool] = None
     deactivation_date: Optional[datetime] = None
-    delete_at: Optional[datetime] = None
+    delete_date: Optional[datetime] = None
 
     @field_validator("phone_number")
     def validate_phone_number(cls, v):
@@ -124,7 +124,7 @@ class ContractPydantic(BaseModel):
     disabled:  bool = Field(False)  # Default to False
     disabled_at: Optional[datetime] = None # format 2026-10-27T16:00:00
     signed_at: Optional[datetime] = None # format 2026-10-27T16:00:00
-    delete_at: Optional[datetime] = None # format 2026-10-27T16:00:00
+    delete_date: Optional[datetime] = None # format 2026-10-27T16:00:00
 
     @field_validator("currency_code")
     def validate_currency_code(cls, v):
@@ -153,7 +153,7 @@ class ContractUpdatePydantic(BaseModel):
     # disabled:  Optional[bool] = Field(False)  # Default to False
     # disabled_at: Optional[datetime] = None # format 2026-10-27T16:00:00
     # signed_at: Optional[datetime] = None # format 2026-10-27T16:00:00
-    # delete_at: Optional[datetime] = None # format 2026-10-27T16:00:00
+    # delete_date: Optional[datetime] = None # format 2026-10-27T16:00:00
 
     @field_validator("currency_code")
     def validate_currency_code(cls, v):

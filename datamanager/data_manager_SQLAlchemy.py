@@ -340,7 +340,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             disabled=contract.disabled,
             disabled_at=contract.disabled_at,
             signed_at=contract.signed_at,
-            delete_at=contract.delete_at
+            delete_date=contract.delete_date
         )
 
 
