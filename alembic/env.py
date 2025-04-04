@@ -1,4 +1,3 @@
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -6,12 +5,14 @@ from sqlalchemy import pool
 
 from alembic import context
 
+from datamanager import models
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
 # Interpret the config file for Python logging.
-# This line sets up log handlers based on the configuration in the .ini file.
+# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
@@ -19,13 +20,13 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from datamanager import models  # Replace 'your_app' with your application's package name
 target_metadata = models.Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -39,20 +40,17 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = os.environ.get("DATABASE_URL")  # Get the environment variable
-    if url:
-        context.configure(
-            url=url,
-            target_metadata=target_metadata,
-            literal_binds=True,
-            dialect_opts={"paramstyle": "named"},
-        )
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
 
-        with context.begin_transaction():
-            context.run_migrations()
-    else:
-        print("Error: DATABASE_URL environment variable not found.")
-        # Handle the error appropriately, maybe raise an exception
+    with context.begin_transaction():
+        context.run_migrations()
+
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
@@ -62,23 +60,19 @@ def run_migrations_online() -> None:
 
     """
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        url=os.environ.get("DATABASE_URL")  # Override URL from env var
     )
 
-    if connectable:
-        with connectable.connect() as connection:
-            context.configure(
-                connection=connection, target_metadata=target_metadata
-            )
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
 
-            with context.begin_transaction():
-                context.run_migrations()
-    else:
-        print("Error: DATABASE_URL environment variable not found.")
-        # Handle the error appropriately
+        with context.begin_transaction():
+            context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
