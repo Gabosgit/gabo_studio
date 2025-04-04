@@ -21,6 +21,7 @@ from sqlalchemy.exc import SQLAlchemyError
 class SQLAlchemyDataManager(DataManagerInterface):
     def __init__(self, session: Session):
         self.session = session
+
 # User related
     def create_user(self, user_data: UserCreatePydantic) -> int:
         """

@@ -73,7 +73,7 @@ async def sign_up(
     return {"user_id": user_id} # FastAPI automatically converts the Python dictionary {"user_id": user_id} into a JSON response
 
 
-@app.get("/users/me/", response_model=UserNoPwdPydantic, tags=["User"])
+@app.get("/user/me/", response_model=UserNoPwdPydantic, tags=["User"])
 @handle_exceptions
 async def get_user_me(
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
@@ -122,7 +122,7 @@ async def soft_delete_user(
 
 
 # PROFILE ROUTES
-@app.post("/profile/", tags=["Profile"])
+@app.post("/profile", tags=["Profile"])
 @handle_exceptions
 async def create_profile(
     profile_data: ProfilePydantic,

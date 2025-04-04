@@ -101,6 +101,7 @@ class ProfileUpdatePydantic(BaseModel):
     bio: Optional[str]
     social_media: List[Optional[HttpUrl]]
     stage_plan: Optional[HttpUrl] = None
+    tech_rider: Optional[HttpUrl] = None
     photos: List[Optional[HttpUrl]]
     videos: List[Optional[HttpUrl]]
     audios: List[Optional[HttpUrl]]

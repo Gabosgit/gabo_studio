@@ -16,6 +16,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+""" Modify env.py in the alembic directory to import your SQLAlchemy models and set up the target metadata. """
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
