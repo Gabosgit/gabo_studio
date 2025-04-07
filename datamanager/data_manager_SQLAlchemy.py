@@ -2,8 +2,6 @@
     Data manager for SQLAlchemy
 """
 
-import sqlalchemy
-from fastapi import HTTPException, status
 from pydantic import HttpUrl
 
 from datamanager.data_manager_interface import DataManagerInterface
@@ -15,7 +13,7 @@ from pydantic_models import UserAuthPydantic, ProfilePydantic, ContractPydantic,
     EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
     EventUpdatePydantic, AccommodationUpdatePydantic
 from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException, ResourcesMismatchException)
-from sqlalchemy.exc import SQLAlchemyError
+
 
 
 class SQLAlchemyDataManager(DataManagerInterface):
