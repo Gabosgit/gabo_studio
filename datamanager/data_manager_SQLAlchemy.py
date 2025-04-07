@@ -49,7 +49,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             )
             self.session.add(new_user)
             self.session.commit()
-            return new_user.iy
+            return new_user.id
 
         # IntegrityError is a reporting from SQLAlchemy
         except exc.IntegrityError:  # Handle unique constraint violations EX: username or email already exists
