@@ -17,10 +17,21 @@ from datetime import timedelta, datetime
 from Oauth2 import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token
 from dependencies import get_common_dependencies
 
+from fastapi.middleware.cors import CORSMiddleware # To allow requests from a react app
+
 
 app = FastAPI()
 register_exception_handlers(app) #register the handlers.
 router = APIRouter()
+
+# Allow requests from your frontend (adjust origins as needed)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # React frontend
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 # ROOT ROUTE
 @app.get("/", tags=["Home"])
