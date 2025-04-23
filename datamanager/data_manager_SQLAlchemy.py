@@ -131,6 +131,26 @@ class SQLAlchemyDataManager(DataManagerInterface):
         pass
 
 
+    def get_user_profiles(self, current_user_id: int, db: Session):
+        """
+        :param current_user_id:
+        :param db: database
+        :return: JSON with a List of dictionaries with profile ID and name
+        """
+        profiles = db.query(Profile.id, Profile.name).filter(Profile.user_id == current_user_id).all()
+
+        if not profiles:
+            raise ResourcesMismatchException(resource_name_A="Profiles", resource_name_B="User",
+                                             resource_id_B=current_user_id)
+
+        if profiles:
+            return [{"id": profile.id, "name": profile.name} for profile in profiles]
+
+        else:
+            return None
+
+
+
 # Profile related
     def create_profile(self, profile_data: ProfilePydantic, current_user_id: int, db: Session):
         """

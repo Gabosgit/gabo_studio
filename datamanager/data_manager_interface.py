@@ -35,6 +35,12 @@ class DataManagerInterface(ABC):
         """ Deletes a user. """
         pass
 
+    @abstractmethod
+    def get_user_profiles(self, user_id: int, db):
+        """ Returns the profiles owned by the current user """
+        pass
+
+
 
 # Profile related
     @abstractmethod

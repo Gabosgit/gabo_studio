@@ -132,6 +132,16 @@ async def soft_delete_user(
     return response
 
 
+@app.get("/user/profiles", tags=["User"])
+@handle_exceptions
+async def get_user_profiles(
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    profiles = data_manager.get_user_profiles(current_user.id, db)
+    return {"user_profiles": profiles}
+
+
 # PROFILE ROUTES
 @app.post("/profile", tags=["Profile"])
 @handle_exceptions
