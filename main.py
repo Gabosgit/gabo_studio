@@ -223,7 +223,7 @@ async def create_contract(
     :return: id new contract or HTTPException
     """
     current_user, db, data_manager = common_dependencies
-    id_contract = data_manager.create_contract(contract_data, current_user, db)
+    id_contract = data_manager.create_contract(contract_data, current_user.id, db)
     return {"contract_id": id_contract}
 
 

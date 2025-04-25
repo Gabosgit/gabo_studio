@@ -23,39 +23,6 @@ class ResourcesMismatchException(Exception):
         super().__init__(f"No {resource_name_A} for {resource_name_B} with ID {resource_id_B}.")
 
 
-
-# CLASSES TO DELETE
-#
-# class UserNotFoundException(Exception):
-#     """Exception raised when an user with the given ID is not found."""
-#     pass
-#
-# class ProfileNotFoundException(Exception):
-#     """Exception raised when a profile with the given ID is not found."""
-#     pass
-#
-# class ProfileUserMismatchException(Exception):
-#     """Exception raised when a profile does not belong to the given user."""
-#     pass
-#
-# class DatabaseError(Exception):
-#     """Custom exception for database-related errors."""
-#     pass
-#
-#
-# class ContractNotFoundException(Exception):
-#     """Exception raised when a contract with the given ID is not found."""
-#     pass
-#
-# class ContractUserMismatchException(Exception):
-#     """Exception raised when a contract does not belong to the given user."""
-#     pass
-#
-# class EventNotFoundException(Exception):
-#     """Exception raised when no event is found."""
-#
-# class EventUserMismatchException(Exception):
-#     """Exception raised when an event does not belong to the given user."""
-#
-# class AccommodationNotFoundException(Exception):
-#     """Exception raised when no accommodation is found."""
+class InvalidContractException(Exception):
+    def __init__(self):
+        super().__init__("Offeror cannot be the same as Offeree.")

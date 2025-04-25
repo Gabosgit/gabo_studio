@@ -29,7 +29,7 @@ class UserCreatePydantic(BaseModel):
 
     @field_validator("phone_number")
     def validate_phone_number(cls, v):
-        """llow international format with optional spaces and dashes"""
+        """Allow international format with optional spaces and dashes"""
         if not re.match(r"^\+?\d[\d\s\-]+$", v):
             raise ValueError("Invalid telephone number format")
         return v
@@ -257,7 +257,6 @@ class EventUpdatePydantic(BaseModel):
         if date_val < today:
             raise ValueError("Date must be today or in the future")
         return date_val
-
 
 
 # ACCOMMODATION MODELS

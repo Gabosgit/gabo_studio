@@ -12,7 +12,8 @@ from .models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import UserAuthPydantic, ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
     EventUpdatePydantic, AccommodationUpdatePydantic
-from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException, ResourcesMismatchException)
+from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException,
+                                           ResourcesMismatchException, InvalidContractException)
 
 
 
@@ -271,15 +272,24 @@ class SQLAlchemyDataManager(DataManagerInterface):
 
 
 # Contract related
-    def create_contract(self, contract_data: ContractPydantic, current_user: UserAuthPydantic, db: Session):
+    def create_contract(self, contract_data: ContractPydantic, current_user_id: int, db: Session):
         """
         Creates a new contract in the database.
         Validate input data with ContractPydantic and UserAuthPydantic
         """
         try:
+            # Check if the offeree_id exists in the database
+            offeree_exists = db.query(User).filter(User.id == contract_data.offeree_id).first()
+            if not offeree_exists:
+                raise ResourceNotFoundException(resource_name="Offeree", resource_id=contract_data.offeree_id)
+
+            # Check if the offeror_id is the same as offeree_id
+            if contract_data.offeree_id == current_user_id:
+                raise InvalidContractException
+
             new_contract = Contract(
                 name=contract_data.name, # Contract name
-                offeror_id=current_user.id, # Current user create the contract as offeror
+                offeror_id=current_user_id, # Current user create the contract as offeror
                 offeree_id=contract_data.offeree_id,
                 total_fee=contract_data.total_fee,
                 currency_code=contract_data.currency_code,
@@ -317,8 +327,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
                                                 user_id=current_user_id)
 
         if not events_in_contract:
-            raise ResourcesMismatchException(resource_name_A="Event", resource_name_B="Contract",
-                                             resource_id_B=contract_id)
+            return []
 
         # Extract the IDs from the list of tuples in result events_in_contract
         return [event_id[0] for event_id in events_in_contract]
@@ -338,7 +347,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
         if not contract:
             raise ResourceUserMismatchException(resource_name="Contract", resource_id=contract_id, user_id=current_user_id)
 
-        if contract.offeror_id != current_user_id:
+        if contract.offeror_id != current_user_id and contract.offeree_id != current_user_id:
             raise ResourcesMismatchException(resource_name_A="Contract", resource_name_B="User", resource_id_B=current_user_id)
 
         return ContractPydantic(

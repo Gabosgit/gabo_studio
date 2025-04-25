@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from datamanager.exception_classes import (
     ResourceNotFoundException,
-    ResourceUserMismatchException, ResourcesMismatchException
+    ResourceUserMismatchException, ResourcesMismatchException, InvalidContractException
 )
 from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import UniqueViolation
@@ -33,6 +33,13 @@ def register_exception_handlers(app: FastAPI):
     @app.exception_handler(ResourcesMismatchException)
     async def resources_mismatch_found_exception_handler(request: Request, exc: ResourcesMismatchException):
         print(exc)
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"message": str(exc)}
+        )
+
+    @app.exception_handler(InvalidContractException)
+    async def invalid_contract_exception_handler(request: Request, exc: InvalidContractException):
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={"message": str(exc)}
@@ -78,6 +85,10 @@ def handle_exceptions(func):
         except ResourcesMismatchException as e:
             print(f"{e}\n"
                   f"ResourcesMismatchException")
+            raise e
+        except InvalidContractException as e:
+            print(f"{e}\n"
+                  f"InvalidContractException")
             raise e
         except IntegrityError as e:
             print(f"{e}\n"
