@@ -121,7 +121,7 @@ class ContractPydantic(BaseModel):
     travel_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
     accommodation_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
     other_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
-    total_fee: Decimal = Field(decimal_places=2)  # Will be auto-filled
+    total_fee: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)  # Will be auto-filled
     disabled: bool = Field(False)  # Default to False
     disabled_at: Optional[datetime] = None
     signed_at: Optional[datetime] = None
