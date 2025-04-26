@@ -287,18 +287,21 @@ class SQLAlchemyDataManager(DataManagerInterface):
             if contract_data.offeree_id == current_user_id:
                 raise InvalidContractException
 
+            total_fee = contract_data.performance_fee + contract_data.travel_expenses + contract_data.accommodation_expenses + contract_data.other_expenses
+
             new_contract = Contract(
                 name=contract_data.name, # Contract name
                 offeror_id=current_user_id, # Current user create the contract as offeror
                 offeree_id=contract_data.offeree_id,
-                total_fee=contract_data.total_fee,
                 currency_code=contract_data.currency_code,
                 upon_signing=contract_data.upon_signing,  # % of total
                 upon_completion=contract_data.upon_completion, # % rest
                 payment_method=contract_data.payment_method,
+                performance_fee=contract_data.performance_fee,
                 travel_expenses=contract_data.travel_expenses,
                 accommodation_expenses=contract_data.accommodation_expenses,
-                other_expenses=contract_data.other_expenses
+                other_expenses=contract_data.other_expenses,
+                total_fee=total_fee
             )
             db.add(new_contract)
             db.commit()

@@ -111,20 +111,21 @@ class ProfileUpdatePydantic(BaseModel):
 
 # CONTRACT MODELS
 class ContractPydantic(BaseModel):
-    name: str # Contract name
+    name: str  # Contract name
     offeree_id: int
-    total_fee: Decimal = Field(decimal_places=2)
     currency_code: str
-    upon_signing: int # % of total
-    upon_completion: int # % rest
+    upon_signing: int  # % of total
+    upon_completion: int  # % rest
     payment_method: str
-    travel_expenses: Optional[Decimal] = Field(default=None, decimal_places=2)
-    accommodation_expenses: Optional[Decimal] = Field(default=None, decimal_places=2)
-    other_expenses: Optional[Decimal] = Field(default=None, decimal_places=2)
-    disabled:  bool = Field(False)  # Default to False
-    disabled_at: Optional[datetime] = None # format 2026-10-27T16:00:00
-    signed_at: Optional[datetime] = None # format 2026-10-27T16:00:00
-    delete_date: Optional[datetime] = None # format 2026-10-27T16:00:00
+    performance_fee: Decimal = Field(decimal_places=2)
+    travel_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    accommodation_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    other_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    total_fee: Decimal = Field(decimal_places=2)  # Will be auto-filled
+    disabled: bool = Field(False)  # Default to False
+    disabled_at: Optional[datetime] = None
+    signed_at: Optional[datetime] = None
+    delete_date: Optional[datetime] = None
 
     @field_validator("currency_code")
     def validate_currency_code(cls, v):
@@ -138,19 +139,36 @@ class ContractPydantic(BaseModel):
         except ValueError:
             raise ValueError("Invalid ISO 4217 currency code")
 
+    # @field_validator("total_fee", mode="before")
+    # def calculate_total_fee(cls, values):
+    #     """
+    #     mode=before: means that the validation function runs before the field is processed by Pydantic.
+    #     :param values: allows access to other fields of the model to computing values before setting total_fee
+    #     :return: sum of performance_fee, travel_expenses, accommodation_expenses, other_expenses
+    #     """
+    #     return (
+    #         values.get("performance_fee", Decimal(0)) +
+    #         values.get("travel_expenses", Decimal(0)) +
+    #         values.get("accommodation_expenses", Decimal(0)) +
+    #         values.get("other_expenses", Decimal(0))
+    #     )
+
+
+
 
 class ContractUpdatePydantic(BaseModel):
     name: Optional[str] # Contract name
     offeree_id: Optional[int]
-    total_fee: Optional[Decimal] = Field(decimal_places=2)
     currency_code: Optional[str]
     upon_signing: Optional[int] # % of total
     upon_completion: Optional[int] # % rest
     payment_method: Optional[str]
-    travel_expenses: Optional[Decimal] = Field(default=None, decimal_places=2)
-    accommodation_expenses: Optional[Decimal] = Field(default=None, decimal_places=2)
-    other_expenses: Optional[Decimal] = Field(default=None, decimal_places=2)
-    # disabled:  Optional[bool] = Field(False)  # Default to False
+    performance_fee: Decimal = Field(decimal_places=2)
+    travel_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    accommodation_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    other_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    total_fee: Decimal = Field(decimal_places=2)  # Will be auto-filled
+    disabled:  Optional[bool] = Field(False)  # Default to False
     # disabled_at: Optional[datetime] = None # format 2026-10-27T16:00:00
     # signed_at: Optional[datetime] = None # format 2026-10-27T16:00:00
     # delete_date: Optional[datetime] = None # format 2026-10-27T16:00:00
@@ -166,6 +184,20 @@ class ContractUpdatePydantic(BaseModel):
             return v
         except ValueError:
             raise ValueError("Invalid ISO 4217 currency code")
+
+    @field_validator("total_fee", mode="before")
+    def calculate_total_fee(cls, values):
+        """
+        mode=before: means that the validation function runs before the field is processed by Pydantic.
+        :param values: allows access to other fields of the model to computing values before setting total_fee
+        :return: sum of performance_fee, travel_expenses, accommodation_expenses, other_expenses
+        """
+        return (
+                values.get("performance_fee", Decimal(0)) +
+                values.get("travel_expenses", Decimal(0)) +
+                values.get("accommodation_expenses", Decimal(0)) +
+                values.get("other_expenses", Decimal(0))
+        )
 
 
 # EVENT MODELS
