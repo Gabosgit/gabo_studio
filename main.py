@@ -151,6 +151,16 @@ async def get_user_profiles(
     profiles = data_manager.get_user_profiles(current_user.id, db)
     return {"user_profiles": profiles}
 
+@app.get("/user/{user_id}/contracts", tags=["User"])
+@handle_exceptions
+async def get_user_profiles(
+    user_id: int,
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    contracts = data_manager.get_user_contracts(user_id, db)
+    return {"user_contracts": contracts}
+
 
 # PROFILE ROUTES
 @app.post("/profile", tags=["Profile"])

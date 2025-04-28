@@ -151,6 +151,25 @@ class SQLAlchemyDataManager(DataManagerInterface):
             return None
 
 
+    def get_user_contracts(self, user_id: int, db: Session):
+        """
+        :param current_user_id:
+        :param db: database
+        :return: JSON with a List of dictionaries with profile ID and name
+        """
+        contracts = db.query(Contract.id, Contract.name).filter(Contract.offeror_id == user_id or Contract.offeree_id == user_id).all()
+
+        if not contracts:
+            raise ResourcesMismatchException(resource_name_A="Contracts", resource_name_B="User",
+                                             resource_id_B=user_id)
+
+        if contracts:
+            return [{"id": contract.id, "name": contract.name} for contract in contracts]
+
+        else:
+            return None
+
+
 
 # Profile related
     def create_profile(self, profile_data: ProfilePydantic, current_user_id: int, db: Session):
