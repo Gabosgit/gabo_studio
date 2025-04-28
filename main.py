@@ -142,18 +142,20 @@ async def soft_delete_user(
     return response
 
 
-@app.get("/user/profiles", tags=["User"])
+@app.get("/user/{user_id}/profiles", tags=["User"])
 @handle_exceptions
 async def get_user_profiles(
+    user_id: int,
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
     current_user, db, data_manager = common_dependencies
-    profiles = data_manager.get_user_profiles(current_user.id, db)
+    profiles = data_manager.get_user_profiles(user_id, db)
     return {"user_profiles": profiles}
+
 
 @app.get("/user/{user_id}/contracts", tags=["User"])
 @handle_exceptions
-async def get_user_profiles(
+async def get_user_contracts(
     user_id: int,
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
