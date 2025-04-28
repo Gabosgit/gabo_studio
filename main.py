@@ -100,6 +100,16 @@ async def get_user_me(
     return user
 
 
+@app.get("/user/{user_id}", response_model=UserNoPwdPydantic, tags=["User"])
+@handle_exceptions
+async def get_user_by_id(
+    user_id: int,
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    user_by_id = data_manager.get_user_by_id(user_id, db)
+    return  user_by_id
+
 @app.put("/user", tags=["User"])
 @handle_exceptions
 async def update_user(
