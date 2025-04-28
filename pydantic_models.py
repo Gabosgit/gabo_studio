@@ -112,6 +112,7 @@ class ProfileUpdatePydantic(BaseModel):
 # CONTRACT MODELS
 class ContractPydantic(BaseModel):
     name: str  # Contract name
+    offeror_id: int
     offeree_id: int
     currency_code: str
     upon_signing: int  # % of total
