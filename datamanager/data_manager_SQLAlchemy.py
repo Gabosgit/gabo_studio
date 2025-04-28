@@ -11,7 +11,7 @@ from sqlalchemy import exc, or_  # Import exception handling
 from .models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
-    EventUpdatePydantic, AccommodationUpdatePydantic
+    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic
 from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException,
                                            ResourcesMismatchException, InvalidContractException)
 
@@ -291,7 +291,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
 
 
 # Contract related
-    def create_contract(self, contract_data: ContractPydantic, current_user_id: int, db: Session):
+    def create_contract(self, contract_data: ContractCreatePydantic, current_user_id: int, db: Session):
         """
         Creates a new contract in the database.
         Validate input data with ContractPydantic and UserAuthPydantic

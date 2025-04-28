@@ -236,7 +236,7 @@ async def delete_profile(
 @app.post("/contract", tags=["Contract"])
 @handle_exceptions
 async def create_contract(
-    contract_data: ContractPydantic,
+    contract_data: ContractCreatePydantic,
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
     """

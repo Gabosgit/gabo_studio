@@ -110,6 +110,36 @@ class ProfileUpdatePydantic(BaseModel):
 
 
 # CONTRACT MODELS
+class ContractCreatePydantic(BaseModel):
+    name: str  # Contract name
+    offeree_id: int
+    currency_code: str
+    upon_signing: int  # % of total
+    upon_completion: int  # % rest
+    payment_method: str
+    performance_fee: Decimal = Field(decimal_places=2)
+    travel_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    accommodation_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    other_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
+    total_fee: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)  # Will be auto-filled
+    disabled: bool = Field(False)  # Default to False
+    disabled_at: Optional[datetime] = None
+    signed_at: Optional[datetime] = None
+    delete_date: Optional[datetime] = None
+
+    @field_validator("currency_code")
+    def validate_currency_code(cls, v):
+        """
+            :param v: currency code
+            :return: currency code or ValueError
+        """
+        try:
+            Currency(v)
+            return v
+        except ValueError:
+            raise ValueError("Invalid ISO 4217 currency code")
+
+
 class ContractPydantic(BaseModel):
     name: str  # Contract name
     offeror_id: int
@@ -139,21 +169,6 @@ class ContractPydantic(BaseModel):
             return v
         except ValueError:
             raise ValueError("Invalid ISO 4217 currency code")
-
-    # @field_validator("total_fee", mode="before")
-    # def calculate_total_fee(cls, values):
-    #     """
-    #     mode=before: means that the validation function runs before the field is processed by Pydantic.
-    #     :param values: allows access to other fields of the model to computing values before setting total_fee
-    #     :return: sum of performance_fee, travel_expenses, accommodation_expenses, other_expenses
-    #     """
-    #     return (
-    #         values.get("performance_fee", Decimal(0)) +
-    #         values.get("travel_expenses", Decimal(0)) +
-    #         values.get("accommodation_expenses", Decimal(0)) +
-    #         values.get("other_expenses", Decimal(0))
-    #     )
-
 
 
 
