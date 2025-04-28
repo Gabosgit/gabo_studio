@@ -7,9 +7,9 @@ from pydantic import HttpUrl
 from datamanager.data_manager_interface import DataManagerInterface
 from sqlalchemy.orm import Session
 from typing import Optional
-from sqlalchemy import exc  # Import exception handling
+from sqlalchemy import exc, or_  # Import exception handling
 from .models import User, Profile, Contract, Event, Accommodation
-from pydantic_models import UserAuthPydantic, ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
+from pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
     EventUpdatePydantic, AccommodationUpdatePydantic
 from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException,
@@ -157,7 +157,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
         :param db: database
         :return: JSON with a List of dictionaries with profile ID and name
         """
-        contracts = db.query(Contract.id, Contract.name).filter(Contract.offeror_id == user_id or Contract.offeree_id == user_id).all()
+        contracts = db.query(Contract.id, Contract.name).filter(or_(Contract.offeror_id == user_id, Contract.offeree_id == user_id)).all()
 
         if not contracts:
             raise ResourcesMismatchException(resource_name_A="Contracts", resource_name_B="User",
