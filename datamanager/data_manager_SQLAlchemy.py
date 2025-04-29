@@ -338,15 +338,16 @@ class SQLAlchemyDataManager(DataManagerInterface):
         :param db: database
         :return: tuple with event ids
         """
-        contract = db.query(Contract).filter(Contract.id == contract_id).first()
+        contract = (db.query(Contract)
+                    .filter(Contract.id == contract_id)
+                    .filter(or_(Contract.offeror_id == current_user_id, Contract.offeree_id == current_user_id))
+                    .first())
+
         events_in_contract: list = db.query(Event.id).filter(Event.contract_id == contract_id).all()
 
         if not contract:
             raise ResourceNotFoundException(resource_name="Contract", resource_id=contract_id)
 
-        if contract.offeror_id != current_user_id:
-            raise ResourceUserMismatchException(resource_name="Contract", resource_id=contract_id,
-                                                user_id=current_user_id)
 
         if not events_in_contract:
             return []
@@ -360,17 +361,14 @@ class SQLAlchemyDataManager(DataManagerInterface):
             Retrieves a contract by ID.
             Return a dictionary with the contract infos
         """
-        contract = (
-            db.query(Contract)
-            .filter(Contract.id == contract_id)
-            .filter((Contract.offeror_id == current_user_id) | (Contract.offeree_id == current_user_id))
-            .first()
-        )
+        contract = (db.query(Contract)
+                    .filter(Contract.id == contract_id)
+                    .filter(or_(Contract.offeror_id == current_user_id, Contract.offeree_id == current_user_id))
+                    .first())
+
         if not contract:
             raise ResourceUserMismatchException(resource_name="Contract", resource_id=contract_id, user_id=current_user_id)
 
-        if contract.offeror_id != current_user_id and contract.offeree_id != current_user_id:
-            raise ResourcesMismatchException(resource_name_A="Contract", resource_name_B="User", resource_id_B=current_user_id)
 
         return ContractPydantic(
             id=contract.id,
