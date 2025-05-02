@@ -236,8 +236,8 @@ class EventPydantic(BaseModel):
     catering_open: Optional[time] = None
     catering_close: Optional[time] = None
     meal_time: Optional[time] = None
-    meal_location_name: str
-    meal_location_address: str
+    meal_location_name: Optional[str]
+    meal_location_address: Optional[str]
     accommodation_id: Optional[int] = None
 
     @field_validator("start", "arrive", "stage_set", "stage_check", "catering_open", "catering_close", "meal_time")
