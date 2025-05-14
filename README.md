@@ -5,13 +5,33 @@ This API facilitates contract generation in the creative and events industry, co
 
 ## Features
 - **User Registration**: Sign up and manage account details.
-- **Profile Creation**: Performers and producers can create service profiles.
-- **Contract Management**: Define agreements with payment terms, event details, and logistics.
-- **Event Organization**: Schedule events with time plans, locations, and contacts.
-- **Accommodation Tracking**: Manage optional lodging arrangements for events.
+- **Profile Creation**: Performers & Producers define their services.
+- **Contract Management**: Define agreements with Parties, Terms & Payment structure.
+- **Event Organization**: Schedule events with details, Scheduling, locations, and contacts.
+- **Accommodation Tracking**: Manage optional lodging details related to the event.
 
 ## Installation
 To set up the API locally:
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/yourrepository.git
+   git clone https://github.com/Gabosgit/MVP_backend_track_v1
+   
+2. Navigate to the project folder:
+   ```bash
+   cd yourrepository
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+
+4. Run the application:
+   ```python
+   fastapi dev main.py
+
+
+# API Endpoints
+## User Management (pydantic)
+   `code`
+
+dw
+
