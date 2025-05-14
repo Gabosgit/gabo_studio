@@ -25,13 +25,22 @@ To set up the API locally:
    pip install -r requirements.txt
 
 4. Run the application:
-   ```python
+   ```bash
    fastapi dev main.py
 
 
 # API Endpoints
 ## User Management (pydantic)
-   `code`
+   ```python
+   class UserCreatePydantic(BaseModel):
+      username: str
+      type_of_entity: str
+      password: str
+      name: str
+      surname: str
+      email_address: EmailStr
+      phone_number: str
+      vat_id: Optional[str] = None
+      bank_account: Optional[str] = None
 
-dw
 
