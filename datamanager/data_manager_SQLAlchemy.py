@@ -11,17 +11,16 @@ from sqlalchemy import exc, or_  # Import exception handling
 from .models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
-    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic
+    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic
 from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException,
                                            ResourcesMismatchException, InvalidContractException)
-
 
 
 class SQLAlchemyDataManager(DataManagerInterface):
     def __init__(self, session: Session):
         self.session = session
 
-# User related
+### User related
     def create_user(self, user_data: UserCreatePydantic) -> int:
         """
             Creates a new user and returns the user ID.
@@ -88,7 +87,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
         )
 
 
-    def update_user(self, user_data_to_update: UserUpdatePydantic, current_user_id: int, db):
+    def update_user(self, user_data_to_update: UserAuthPydantic, current_user_id: int, db):
 
         user = db.query(User).filter(User.id == current_user_id).first()
 
@@ -343,7 +342,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
                     .filter(or_(Contract.offeror_id == current_user_id, Contract.offeree_id == current_user_id))
                     .first())
 
-        events_in_contract: list = db.query(Event.id).filter(Event.contract_id == contract_id).all()
+        events_in_contract: list = db.query(Event.id, Event.name).filter(Event.contract_id == contract_id).all()
 
         if not contract:
             raise ResourceNotFoundException(resource_name="Contract", resource_id=contract_id)
@@ -455,6 +454,19 @@ class SQLAlchemyDataManager(DataManagerInterface):
                     "Contract name": contract.name,
                     "deactivation date": disabled_at
                     }
+
+    def get_contract_events_id_and_name(self, contract_id: int, db: Session):
+        events = db.query(Event.id, Event.name).filter(Event.contract_id == contract_id).all()
+
+        if not events:
+            raise ResourcesMismatchException(resource_name_A="Events", resource_name_B="Contract",
+                                             resource_id_B=contract_id)
+
+        if events:
+            return [{"id": event.id, "name": event.name} for event in events]
+
+        else:
+            return None
 
 
 # Event related

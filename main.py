@@ -308,6 +308,18 @@ async def show_itinerary():
     return {"message": "Shows Itinerary"}
 
 
+@app.get("/contract/{contract_id}/events", tags=["Contract"])
+@handle_exceptions
+async def get_contract_events_id_and_name(
+    contract_id: int,
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    events = data_manager.get_contract_events_id_and_name(contract_id, db)
+    return {"contract_events": events}
+
+
+
 # EVENT ROUTES
 @app.post("/event", tags=["Event"])
 @handle_exceptions

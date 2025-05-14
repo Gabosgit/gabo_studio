@@ -19,7 +19,6 @@ class DataManagerInterface(ABC):
         """ Retrieves a user by ID. """
         pass
 
-
     @abstractmethod
     def soft_delete_user(self,deactivation_date, user_data: dict, db) -> dict:
         """ Sets user deactivation date. """
