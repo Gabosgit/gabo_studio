@@ -43,7 +43,7 @@ To set up the API locally:
    ```
 
 
-# API Endpoints  
+# API Endpoints
 ## User Management (pydantic)
 POST /users/create → Register a new user.
    ```python
@@ -71,12 +71,50 @@ GET /profiles/{id} → Retrieve profile details.
        social_media: List[Optional[HttpUrl]]
    ```
 
+## Contract Creation
+POST /contracts/create → Create a new contract. \
+GET /contracts/{id} → Retrieve contract details.
+   ```python
+   class ContractCreatePydantic(BaseModel):
+    name: str
+    offeree_id: int
+    currency_code: str
+    upon_signing: int
+    upon_completion: int
+    payment_method: str
+   ```
 
+## Event Scheduling
+POST /events/create → Schedule a new event. \
+GET /events/{id} → Get event details.
+   ```python
+   class EventPydantic(BaseModel):
+    name: str
+    contract_id: int
+    date: date
+    duration: timedelta
+    start: time
+    end: time
+   ```
 
+## Accommodation Tracking
+POST /accommodations/create → Register an accommodation. \
+GET /accommodations/{id} → Get accommodation details.
+   ```python
+   class AccommodationPydantic(BaseModel):
+    name: str
+    contact_person: str
+    address: str
+    telephone_number: str
+   ```
 
 
 ### API Documentation
 Swagger UI: http://127.0.0.1:8000/docs
 ReDoc: http://127.0.0.1:8000/redoc
+
+
+### Contact
+For inquiries, reach out at cardenasoscargabriel@gmail.com
 
 
