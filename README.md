@@ -42,5 +42,20 @@ To set up the API locally:
       phone_number: str
       vat_id: Optional[str] = None
       bank_account: Optional[str] = None
+   ```
+
+
+### Set Up Environment Variables
+   ```python
+   SERVER_PWD=your_server_passowrd
+   DATABASE_URL=e.g.= postgresql://postgres:password@localhost/postgres
+   SECRET_KEY=your_secret_key  
+   ALGORITHM=your_chosen_algorithm
+   ```
+
+
+### API Documentation
+Swagger UI: http://127.0.0.1:8000/docs
+ReDoc: http://127.0.0.1:8000/redoc
 
 
