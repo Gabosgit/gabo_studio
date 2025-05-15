@@ -18,19 +18,34 @@ To set up the API locally:
    
 2. Navigate to the project folder:
    ```bash
-   cd yourrepository
+   cd MVP_backend_track_v1
 
 3. Install dependencies:
    ```bash
    pip install -r requirements.txt
 
 4. Run the application:
+   Local:
    ```bash
    fastapi dev main.py
+   ```
+   Remote:
+   ```bash
+   uvicorn main:app --host 0.0.0.0 --port 10000
+   ```
+
+### Set Up Environment Variables
+   ```python
+   SERVER_PWD=your_server_passowrd
+   DATABASE_URL=e.g.= postgresql://postgres:password@localhost/postgres
+   SECRET_KEY=your_secret_key  
+   ALGORITHM=your_chosen_algorithm
+   ```
 
 
-# API Endpoints
+# API Endpoints  
 ## User Management (pydantic)
+POST /users/create → Register a new user.
    ```python
    class UserCreatePydantic(BaseModel):
       username: str
@@ -44,14 +59,20 @@ To set up the API locally:
       bank_account: Optional[str] = None
    ```
 
-
-### Set Up Environment Variables
+## Profile Management
+POST /profiles/create → Create a new profile. \
+GET /profiles/{id} → Retrieve profile details.
    ```python
-   SERVER_PWD=your_server_passowrd
-   DATABASE_URL=e.g.= postgresql://postgres:password@localhost/postgres
-   SECRET_KEY=your_secret_key  
-   ALGORITHM=your_chosen_algorithm
+   class ProfilePydantic(BaseModel):
+       name: str
+       performance_type: str
+       description: str
+       bio: str
+       social_media: List[Optional[HttpUrl]]
    ```
+
+
+
 
 
 ### API Documentation
