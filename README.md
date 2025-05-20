@@ -42,8 +42,17 @@ To set up the API locally:
    ALGORITHM=your_chosen_algorithm
    ```
 
+# DATABAS Diagram
+
+<img src="http://gabriel-cardenas.com/WEB_dev/my_MVP/images/DB_diagram.png" alt="DB_Diagram" width="auto" height="600">
 
 # API Endpoints
+### API Documentation
+Swagger UI: http://127.0.0.1:8000/docs
+ReDoc: http://127.0.0.1:8000/redoc
+
+<img src="http://gabriel-cardenas.com/WEB_dev/my_MVP/images/API_endpoints.png" alt="SWAGGER" width="auto" height="600">
+
 ## User Management (pydantic)
 POST /users/create → Register a new user.
    ```python
@@ -108,10 +117,10 @@ GET /accommodations/{id} → Get accommodation details.
     telephone_number: str
    ```
 
+# EXAMPLE REQUEST
 
-### API Documentation
-Swagger UI: http://127.0.0.1:8000/docs
-ReDoc: http://127.0.0.1:8000/redoc
+<img src="http://gabriel-cardenas.com/WEB_dev/my_MVP/images/EX_Postman.png" alt="SWAGGER" width="auto" height="600">
+ 
 
 
 ### Contact
