@@ -133,18 +133,17 @@ class SQLAlchemyDataManager(DataManagerInterface):
 
     def get_user_profiles(self, user_id: int, db: Session):
         """
-        :param current_user_id:
+        :param user_id:
         :param db: database
         :return: JSON with a List of dictionaries with profile ID and name
         """
-        profiles = db.query(Profile.id, Profile.name).filter(Profile.user_id == user_id).all()
+        profiles = db.query(Profile.id, Profile.name, Profile.performance_type).filter(Profile.user_id == user_id).all()
 
         if not profiles:
-            raise ResourcesMismatchException(resource_name_A="Profiles", resource_name_B="User",
-                                             resource_id_B=user_id)
+            return profiles
 
         if profiles:
-            return [{"id": profile.id, "name": profile.name} for profile in profiles]
+            return [{"id": profile.id, "name": profile.name, "performance_type": profile.performance_type} for profile in profiles]
 
         else:
             return None
@@ -159,8 +158,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
         contracts = db.query(Contract.id, Contract.name).filter(or_(Contract.offeror_id == user_id, Contract.offeree_id == user_id)).all()
 
         if not contracts:
-            raise ResourcesMismatchException(resource_name_A="Contracts", resource_name_B="User",
-                                             resource_id_B=user_id)
+            return contracts
 
         if contracts:
             return [{"id": contract.id, "name": contract.name} for contract in contracts]
