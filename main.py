@@ -2,7 +2,7 @@
     API to manage Users, User-Profiles, User_Contracts, User_Events, and Accommodations
 """
 
-from fastapi import Depends, APIRouter, FastAPI, HTTPException, status
+from fastapi import Depends, APIRouter, FastAPI, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,17 @@ from dependencies import get_common_dependencies
 
 from fastapi.middleware.cors import CORSMiddleware # To allow requests from a react app
 
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
+
+# Configuration
+cloudinary.config(
+    cloud_name = "dqkdbvnac",
+    api_key = "135642772133192",
+    api_secret = "1eAuh8WmfFjp7NPgE6nw8eIpSxo", # Click 'View API Keys' above to copy your API secret
+    secure=True
+)
 
 app = FastAPI()
 register_exception_handlers(app) #register the handlers.
@@ -32,6 +43,20 @@ app.add_middleware(
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
 )
+
+# UPLOAD
+@app.post("/upload")
+async def upload_image(file: UploadFile = File(...)):
+    try:
+        # Read the file contents as bytes
+        contents = await file.read()
+
+        # Upload directly using bytes
+        result = cloudinary.uploader.upload(contents, resource_type="image")
+
+        return {"url": result["secure_url"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ROOT ROUTE
 @app.get("/", tags=["Home"])
@@ -349,7 +374,10 @@ async def get_event(
     :return: event data or HTTPException
     """
     current_user, db, data_manager = common_dependencies
-    event_data = data_manager.get_event_by_id(event_id, current_user.id, db)
+    event_data = data_manager.get_event_by_id(event_id, current_user.id, db).dict()
+    if event_data['accommodation_id']:
+        accommodation_data = data_manager.get_accommodation_by_id(event_data['accommodation_id'] ,db).dict()
+        event_data["accommodation"] = accommodation_data
     return event_data
 
 
