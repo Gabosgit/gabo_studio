@@ -10,6 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, date, time, timedelta
 from typing import Optional, List
 from decimal import Decimal
+from sqlalchemy.dialects import postgresql # To be allowed to store objects/dictionaries as a field in the database
 
 Base = declarative_base()
 
@@ -50,7 +51,9 @@ class Profile(Base):
     photos: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=True)
     videos: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=True)
     audios: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=True)
-    online_press: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=True)
+    # Change online_press to store JSON/JSONB
+    # Use JSONB for better performance and indexing on PostgresSQL
+    online_press: Mapped[list[dict]] = mapped_column(postgresql.JSONB, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="profiles")
 

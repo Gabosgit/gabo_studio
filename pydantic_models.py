@@ -78,6 +78,11 @@ class UserUpdatePydantic(BaseModel):
         return v
 
 
+# Pydantic for add a dictionary with title and URL
+class TitleAndUrl(BaseModel):
+    title: str
+    url: HttpUrl
+
 # PROFILE MODELS
 class ProfilePydantic(BaseModel):
     name: str
@@ -90,7 +95,7 @@ class ProfilePydantic(BaseModel):
     photos: List[Optional[HttpUrl]]
     videos: List[Optional[HttpUrl]]
     audios: List[Optional[HttpUrl]]
-    online_press: List[Optional[HttpUrl]]
+    online_press: List[TitleAndUrl] = [] # Defaults to an empty list
     website: Optional[HttpUrl] = None  # make website optional.
 
 
