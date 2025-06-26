@@ -182,6 +182,9 @@ class SQLAlchemyDataManager(DataManagerInterface):
             ] if profile_data.online_press else []
             # Note: if profile_data.online_press is an empty list (default),
             # the comprehension correctly results in an empty list.
+            # ensures that if the incoming online_press list from Pydantic is empty
+            # (which is its default and common when no data is provided),
+            # processed_online_press also becomes an empty list, which is valid for a JSONB column
 
             # --- Process other HttpUrl lists (social_media, photos, videos, audios) ---
             # Ensure None values from Pydantic's Optional[HttpUrl] are handled

@@ -89,13 +89,16 @@ class ProfilePydantic(BaseModel):
     performance_type: str
     description: str
     bio: str
-    social_media: List[Optional[HttpUrl]]
-    stage_plan: Optional[HttpUrl] = None  # make stage plan optional.
-    tech_rider: Optional[HttpUrl] = None  # make tech rider optional.
-    photos: List[Optional[HttpUrl]]
-    videos: List[Optional[HttpUrl]]
-    audios: List[Optional[HttpUrl]]
-    online_press: List[TitleAndUrl] = [] # Defaults to an empty list
+    social_media: List[Optional[HttpUrl]] = []
+    stage_plan: Optional[HttpUrl] = None
+    tech_rider: Optional[HttpUrl] = None
+    photos: List[Optional[HttpUrl]] = []
+    videos: List[Optional[HttpUrl]] = []
+    audios: List[Optional[HttpUrl]] = []
+
+    # Defaults to an empty list.
+    # Each item will be an instance of TitleAndUrl
+    online_press: List[TitleAndUrl] = []
     website: Optional[HttpUrl] = None  # make website optional.
 
 
