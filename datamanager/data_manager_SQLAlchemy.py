@@ -175,27 +175,51 @@ class SQLAlchemyDataManager(DataManagerInterface):
             Validate the input data with ProfilePydantic and UserAuthPydantic
         """
         try:
+            # --- Process online_press specifically for JSONB column ---
+            processed_online_press = [
+                {"title": item.title, "url": str(item.url)}  # Access title and url attributes
+                for item in profile_data.online_press
+            ] if profile_data.online_press else []
+            # Note: if profile_data.online_press is an empty list (default),
+            # the comprehension correctly results in an empty list.
+
+            # --- Process other HttpUrl lists (social_media, photos, videos, audios) ---
+            # Ensure None values from Pydantic's Optional[HttpUrl] are handled
+            processed_social_media = [str(url) for url in profile_data.social_media if
+                                      url is not None] if profile_data.social_media else []
+            processed_photos = [str(url) for url in profile_data.photos if
+                                url is not None] if profile_data.photos else []
+            processed_videos = [str(url) for url in profile_data.videos if
+                                url is not None] if profile_data.videos else []
+            processed_audios = [str(url) for url in profile_data.audios if
+                                url is not None] if profile_data.audios else []
+
+            # --- Process optional single HttpUrl fields (stage_plan, tech_rider, website) ---
+            # Your existing logic is correct for these
+            processed_stage_plan = str(profile_data.stage_plan) if profile_data.stage_plan else None
+            processed_tech_rider = str(profile_data.tech_rider) if profile_data.tech_rider else None
+            processed_website = str(profile_data.website) if profile_data.website else None
             new_profile = Profile(
                 user_id=current_user_id,
                 name=profile_data.name,
                 performance_type=profile_data.performance_type,
                 description=profile_data.description,
                 bio=profile_data.bio,
-                social_media=[str(url) for url in profile_data.social_media] if profile_data.social_media else [], # Convert to list of strings.
-                stage_plan=str(profile_data.stage_plan) if profile_data.stage_plan else None,  # Convert to string.
-                tech_rider=str(profile_data.tech_rider) if profile_data.tech_rider else None,  # Convert to string.
-                photos=[str(url) for url in profile_data.photos] if profile_data.photos else [], # Convert to list of strings.
-                videos=[str(url) for url in profile_data.videos] if profile_data.videos else [], # Convert to list of strings.
-                audios=[str(url) for url in profile_data.audios] if profile_data.audios else [], # Convert to list of strings.
-                online_press=[str(url) for url in profile_data.online_press] if profile_data.online_press else [],# Convert to list of strings.
-                website=str(profile_data.website) if profile_data.website else None, #Convert to string or return None.
+                social_media=processed_social_media,
+                stage_plan=processed_stage_plan,
+                tech_rider=processed_tech_rider,
+                photos=processed_photos,
+                videos=processed_videos,
+                audios=processed_audios,
+                online_press=processed_online_press,  # <--- THIS IS THE KEY CHANGE HERE
+                website=processed_website,
             )
             db.add(new_profile)
             db.commit()
             db.refresh(new_profile)
             return new_profile.id
         except KeyError as e: # Handle missing keys
-            self.session.rollback()
+            self.session.rollback() # It could use db.rollback() as db is the session object
             print(f"Missing key in user_data: {e}")
             raise ValueError(f"Missing key in user_data: {e}")
         except Exception as e:
