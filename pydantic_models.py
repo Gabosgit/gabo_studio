@@ -92,7 +92,10 @@ class ProfilePydantic(BaseModel):
     social_media: List[Optional[HttpUrl]] = []
     stage_plan: Optional[HttpUrl] = None
     tech_rider: Optional[HttpUrl] = None
-    photos: List[Optional[HttpUrl]] = []
+
+    # all items in it must be valid URLs, and it allows for the field to be completely absent
+    # or null if no photos are associated with the profile.
+    photos: Optional[List[HttpUrl]] = None
     videos: List[Optional[HttpUrl]] = []
     audios: List[Optional[HttpUrl]] = []
 
