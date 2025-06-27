@@ -89,15 +89,15 @@ class ProfilePydantic(BaseModel):
     performance_type: str
     description: str
     bio: str
-    social_media: List[Optional[HttpUrl]] = []
+    social_media: Optional[List[HttpUrl]] = None
     stage_plan: Optional[HttpUrl] = None
     tech_rider: Optional[HttpUrl] = None
 
     # all items in it must be valid URLs, and it allows for the field to be completely absent
     # or null if no photos are associated with the profile.
     photos: Optional[List[HttpUrl]] = None
-    videos: List[Optional[HttpUrl]] = []
-    audios: List[Optional[HttpUrl]] = []
+    videos: Optional[List[HttpUrl]] = None
+    audios: Optional[List[HttpUrl]] = None
 
     # Defaults to an empty list.
     # Each item will be an instance of TitleAndUrl

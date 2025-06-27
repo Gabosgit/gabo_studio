@@ -202,6 +202,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             processed_stage_plan = str(profile_data.stage_plan) if profile_data.stage_plan else None
             processed_tech_rider = str(profile_data.tech_rider) if profile_data.tech_rider else None
             processed_website = str(profile_data.website) if profile_data.website else None
+
             new_profile = Profile(
                 user_id=current_user_id,
                 name=profile_data.name,
