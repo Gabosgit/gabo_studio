@@ -18,7 +18,7 @@ from datamanager.database import get_db, SessionLocal
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY') # to get a string like this run: openssl rand -hex 32
 ALGORITHM = os.getenv('ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -102,11 +102,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     :return: encoded JWT
     """
     to_encode = data.copy() # Copy to avoid modifying the original data dictionary
+
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta # adds that timedelta to the current UTC time
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15) # adds a default of 15 minutes to the current UTC time
-    to_encode.update({"exp": expire}) # Adds the calculated expiration time (expire) to the to_encode dictionary under the key "exp".
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15) # adds a default of x minutes to the current UTC time
+    to_encode.update({"exp": int(expire.timestamp())})  # Convert datetime to Unix timestamp (seconds since epoch)
         # The "exp" claim is a standard JWT claim that represents the expiration time.
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM) # The jwt.encode function from the jwt library creates the JWT.
         # to_encode: The dictionary containing the payload data (including the expiration time).
