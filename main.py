@@ -135,7 +135,7 @@ async def get_user_by_id(
     user_by_id = data_manager.get_user_by_id(user_id, db)
     return  user_by_id
 
-@app.put("/user", tags=["User"])
+@app.patch("/user", tags=["User"])
 @handle_exceptions
 async def update_user(
         user_data_to_update: UserUpdatePydantic,
@@ -151,7 +151,7 @@ async def update_user(
     return updated_user_data
 
 
-@app.patch("/user", tags=["User"])
+@app.patch("/user/deactivation", tags=["User"])
 @handle_exceptions
 async def soft_delete_user(
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)],
