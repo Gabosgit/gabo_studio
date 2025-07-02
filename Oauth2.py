@@ -18,7 +18,7 @@ from datamanager.database import get_db, SessionLocal
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY') # to get a string like this run: openssl rand -hex 32
 ALGORITHM = os.getenv('ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
