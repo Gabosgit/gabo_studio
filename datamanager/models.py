@@ -6,7 +6,8 @@ from sqlalchemy import Integer, String, DateTime, Date, Time, Interval, ForeignK
     type_coerce
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from datetime import datetime, date, time, timedelta
 from typing import Optional, List
 from decimal import Decimal
