@@ -1,6 +1,7 @@
 """
     API to manage Users, User-Profiles, User_Contracts, User_Events, and Accommodations
 """
+import pdb
 
 from fastapi import Depends, APIRouter, FastAPI, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
