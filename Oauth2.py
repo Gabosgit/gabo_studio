@@ -85,6 +85,7 @@ def authenticate_user(db, username: str, password: str):
     user = get_user(username, db)
     if not user:
         return False
+    # password from user input / user.password = hashed password in db
     if not verify_password(password, user.password):
         return False
     return user
@@ -92,10 +93,10 @@ def authenticate_user(db, username: str, password: str):
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """
+    Creates a JWT with that data and expiration, signs it using a secret key, and returns the encoded JWT.
     data: parameter takes a dictionary containing the data you want to include in the JWT's payload, typically user-related information.
     expires_delta: This parameter allows you to specify the expiration time of the token. It's a timedelta object.
     If not provided, a default expiration time of 15 minutes is used.
-    Creates a JWT with that data and expiration, signs it using a secret key, and returns the encoded JWT.
     The token is then sent to the client, allowing them to make authenticated requests to the API.
     :param data: user data
     :param expires_delta: expiration time (optional)
@@ -107,9 +108,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
         expire = datetime.now(timezone.utc) + expires_delta # adds that timedelta to the current UTC time
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15) # adds a default of x minutes to the current UTC time
+
     to_encode.update({"exp": int(expire.timestamp())})  # Convert datetime to Unix timestamp (seconds since epoch)
         # The "exp" claim is a standard JWT claim that represents the expiration time.
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM) # The jwt.encode function from the jwt library creates the JWT.
+
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    # The jwt.encode function from the jwt library creates the JWT.
         # to_encode: The dictionary containing the payload data (including the expiration time).
         # SECRET_KEY: The secret key used to sign the JWT.
         # algorithm=ALGORITHM: The algorithm used to sign the JWT. (e.g., "HS256").

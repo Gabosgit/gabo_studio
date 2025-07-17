@@ -5,12 +5,43 @@ from decimal import Decimal
 from iso4217 import Currency # List of currency codes
 import re
 
-# USER MODELS
+# -----   Referred to TOKEN   -----
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
+
+# -----   USER MODELS   -----
+
 class UserAuthPydantic(BaseModel):
     id: int
     username: str
     password: str
     is_active: bool
+
+
+class UserInDB(BaseModel):
+    id: int
+    username: str
+    hashed_password: str
+    type_of_entity: str
+    name: str
+    surname: str
+    email_address: EmailStr
+    phone_number: int
+    vat_id: Optional[str] = None
+    bank_account: Optional[str] = None  # IBAN
+    disabled: bool = Field(False)  # Default to False
 
 
 class UserCreatePydantic(BaseModel):
@@ -364,27 +395,3 @@ class AccommodationUpdatePydantic(BaseModel):
         if not re.match(r"^\+?\d[\d\s\-]+$", v):
             raise ValueError("Invalid telephone number format")
         return v
-
-
-# Referred to TOKEN
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str | None = None
-
-
-class UserInDB(BaseModel):
-    id: int
-    username: str
-    hashed_password: str
-    type_of_entity: str
-    name: str
-    surname: str
-    email_address: EmailStr
-    phone_number: int
-    vat_id: Optional[str] = None
-    bank_account: Optional[str] = None # IBAN
-    disabled: bool = Field(False)  # Default to False

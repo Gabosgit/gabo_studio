@@ -106,7 +106,6 @@ async def upload_multiple_images(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=500, detail=f"Failed to upload images: {str(e)}")
 
 
-
 # UPLOAD
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
@@ -121,14 +120,19 @@ async def upload_image(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ROOT ROUTE
 @app.get("/", tags=["Home"])
 async def root():
     """ Welcome message """
-    return {"message": "Welcome to my MVP"}
+    return {"message": "Welcome to Create connections Pro"}
 
 
-# USER ROUTES
+
+
+
+# ------     USER ROUTES      ------
+
 """ LOGIN - generate 'bearer token' """
 @app.post("/token", tags=["User"])
 async def login_for_access_token(
@@ -152,10 +156,16 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token( # function to generate the JWT
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )  #data: creates the payload for the token, including the user's username in the "sub" claim.
-    return Token(access_token=access_token, token_type="bearer") # Returns the access token to the client.
+    # function to generate the JWT
+    access_token = create_access_token(
+        data={
+            "sub": user.username},
+            expires_delta=access_token_expires
+        # data: creates the payload for the token, including:
+        #   the user's username in the "sub" claim.
+    )
+    # Returns the access token to the client.
+    return Token(access_token=access_token, token_type="bearer")
 
 
 @app.post("/user", tags=["User"])
@@ -170,6 +180,7 @@ async def sign_up(
     """
     user_id = data_manager.create_user(user_data)
     return {"user_id": user_id} # FastAPI automatically converts the Python dictionary {"user_id": user_id} into a JSON response
+
 
 
 @app.get("/user/me/", response_model=UserNoPwdPydantic, tags=["User"])
@@ -252,7 +263,11 @@ async def get_user_contracts(
     return {"user_contracts": contracts}
 
 
-# PROFILE ROUTES
+
+
+
+# ------     PROFILE ROUTES    ------
+
 @app.post("/profile", tags=["Profile"])
 @handle_exceptions
 async def create_profile(
@@ -321,7 +336,10 @@ async def delete_profile(
     return {"message": "Profile deleted successfully"}
 
 
-# CONTRACT ROUTES
+
+
+# ------     CONTRACT ROUTES     ------
+
 @app.post("/contract", tags=["Contract"])
 @handle_exceptions
 async def create_contract(
@@ -410,7 +428,9 @@ async def get_contract_events_id_and_name(
 
 
 
-# EVENT ROUTES
+
+# ------    EVENT ROUTES    ------
+
 @app.post("/event", tags=["Event"])
 @handle_exceptions
 async def create_event(
@@ -480,7 +500,9 @@ async def delete_event(
     return {"message": "Event deleted successfully"}
 
 
-# ACCOMMODATION ROUTES
+
+# ------   ACCOMMODATION ROUTES   ------
+
 @app.post("/accommodation", tags=["Accommodation"])
 @handle_exceptions
 async def create_accommodation(
