@@ -1,7 +1,7 @@
 """
     Data manager for SQLAlchemy
 """
-
+from fastapi import HTTPException, status
 from pydantic import HttpUrl
 
 from datamanager.data_manager_interface import DataManagerInterface
@@ -10,8 +10,9 @@ from typing import Optional
 from sqlalchemy import exc, or_  # Import exception handling
 from .models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
-    EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
-    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic, TitleAndUrl
+    EventPydantic, AccommodationPydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
+    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic, TitleAndUrl, \
+    ChangePasswordRequest
 from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException,
                                            ResourcesMismatchException, InvalidContractException)
 
@@ -61,6 +62,43 @@ class SQLAlchemyDataManager(DataManagerInterface):
             self.session.rollback()
             print(f"An unexpected error occurred: {e}")
             raise ValueError(f"An unexpected error occurred: {e}")
+
+    @staticmethod
+    def change_password(request: ChangePasswordRequest, current_user, db: Session):
+        """
+            Allows a logged-in user to change their password.
+            Requires the old password for verification.
+        """
+        # 1. Verify the old password
+        from Oauth2 import verify_password, get_password_hash
+        # current_user.password holds the hashed password from the DB (due to UserAuthPydantic mapping)
+        if not verify_password(request.old_password, current_user.password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incorrect old password."
+            )
+
+        # 2. Hash the new password
+        hashed_new_password = get_password_hash(request.new_password)
+
+        # 3. Update the user's password in the database
+        # Retrieve the actual SQLAlchemy ORM object to update
+        db_user = db.query(User).filter(User.username == current_user.username).first()
+        if not db_user:
+            # This should ideally not happen if the get_current_active_user works correctly
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found in DB.")
+
+        db_user.password = hashed_new_password  # Update the password field
+        db.add(db_user)  # Mark the object as dirty
+        db.commit()  # Commit the transaction
+        db.refresh(db_user)  # Refresh the instance to get updated values
+
+        # 4. (Optional but Recommended) Invalidate current sessions/tokens
+        # For JWTs, relying on expiration is common. If you need immediate invalidation,
+        # you'd implement a JWT blacklist (e.g., in Redis) and check it in get_current_user.
+        # For this example, we'll just return a success message.
+
+        return True  # Indicate successful password change
 
 
     def get_user_by_id(self, user_id: int, db: Session) -> Optional[UserNoPwdPydantic]:
@@ -148,10 +186,10 @@ class SQLAlchemyDataManager(DataManagerInterface):
         else:
             return None
 
-
-    def get_user_contracts(self, user_id: int, db: Session):
+    @staticmethod
+    def get_user_contracts(user_id: int, db: Session):
         """
-        :param current_user_id:
+        :param user_id:
         :param db: database
         :return: JSON with a List of dictionaries with profile ID and name
         """
@@ -358,8 +396,8 @@ class SQLAlchemyDataManager(DataManagerInterface):
             db.rollback()
             raise e
 
-
-    def get_contract_events(self, contract_id: int, current_user_id: int, db: Session) -> list:
+    @staticmethod
+    def get_contract_events(contract_id: int, current_user_id: int, db: Session) -> list:
         """
         :param contract_id: to get events
         :param current_user_id: to check if the contract belongs to the user
@@ -484,7 +522,13 @@ class SQLAlchemyDataManager(DataManagerInterface):
                     "deactivation date": disabled_at
                     }
 
-    def get_contract_events_id_and_name(self, contract_id: int, db: Session):
+    @staticmethod
+    def get_contract_events_id_and_name(contract_id: int, db: Session):
+        """
+        :param contract_id:
+        :param db:
+        :return:
+        """
         events = db.query(Event.id, Event.name).filter(Event.contract_id == contract_id).all()
 
         if not events:

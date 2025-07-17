@@ -133,7 +133,7 @@ async def root():
 
 # ------     USER ROUTES      ------
 
-""" LOGIN - generate 'bearer token' """
+""" LOGIN - generate/return 'bearer token' """
 @app.post("/token", tags=["User"])
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], # Depends() tells FastAPI to automatically inject form_data into the function.
@@ -180,6 +180,19 @@ async def sign_up(
     """
     user_id = data_manager.create_user(user_data)
     return {"user_id": user_id} # FastAPI automatically converts the Python dictionary {"user_id": user_id} into a JSON response
+
+
+
+@app.post("/change_password", tags=["User Management"])
+async def change_password(
+    request: ChangePasswordRequest,
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+):
+    current_user, db, data_manager = common_dependencies
+    password_changed = data_manager.change_password(request, current_user, db)
+
+    if password_changed:
+        return {"message": "Password changed successfully."}
 
 
 

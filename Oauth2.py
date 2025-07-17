@@ -11,7 +11,7 @@ from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from pydantic_models import UserInDB, TokenData, UserAuthPydantic
+from pydantic_models import TokenData, UserAuthPydantic
 from datamanager.models import User #Import the SQLAlchemy model.
 from datamanager.database import get_db, SessionLocal
 
