@@ -85,10 +85,12 @@ class TitleAndUrl(BaseModel):
 
 # PROFILE MODELS
 class ProfilePydantic(BaseModel):
-    name: str
-    performance_type: str
-    description: str
-    bio: str
+    id: Optional[int] = None # Optional only for READ operations
+    created_at: Optional[datetime] = None # Optional only for READ operations
+    name: str # REQUIRED
+    performance_type: str # REQUIRED
+    description: str # REQUIRED
+    bio: str # REQUIRED
     social_media: Optional[List[HttpUrl]] = None
     stage_plan: Optional[HttpUrl] = None
     tech_rider: Optional[HttpUrl] = None
@@ -99,25 +101,24 @@ class ProfilePydantic(BaseModel):
     videos: Optional[List[HttpUrl]] = None
     audios: Optional[List[HttpUrl]] = None
 
-    # Defaults to an empty list.
     # Each item will be an instance of TitleAndUrl
-    online_press: List[TitleAndUrl] = []
+    online_press: Optional[List[TitleAndUrl]] = None  # Make the entire list optional
     website: Optional[HttpUrl] = None  # make website optional.
 
 
 class ProfileUpdatePydantic(BaseModel):
-    name: Optional[str]
-    performance_type: Optional[str]
-    description: Optional[str]
-    bio: Optional[str]
-    social_media: List[Optional[HttpUrl]]
+    name: Optional[str] = None  # Add = None for clarity and Pydantic v2 consistency for optionality
+    performance_type: Optional[str] = None
+    description: Optional[str] = None
+    bio: Optional[str] = None
+    social_media: Optional[List[HttpUrl]] = None  # Assuming you want to omit the list or clear it
     stage_plan: Optional[HttpUrl] = None
     tech_rider: Optional[HttpUrl] = None
-    photos: List[Optional[HttpUrl]]
-    videos: List[Optional[HttpUrl]]
-    audios: List[Optional[HttpUrl]]
-    online_press: List[Optional[HttpUrl]]
-    website: Optional[HttpUrl] = None  # make website optional.
+    photos: Optional[List[HttpUrl]] = None
+    videos: Optional[List[HttpUrl]] = None
+    audios: Optional[List[HttpUrl]] = None
+    online_press: Optional[List[TitleAndUrl]] = None  # Make the entire list optional
+    website: Optional[HttpUrl] = None
 
 
 # CONTRACT MODELS
@@ -152,6 +153,7 @@ class ContractCreatePydantic(BaseModel):
 
 
 class ContractPydantic(BaseModel):
+    id: Optional[int] = None # Optional for creation, required for return.
     name: str  # Contract name
     offeror_id: int
     offeree_id: int
@@ -184,18 +186,23 @@ class ContractPydantic(BaseModel):
 
 
 class ContractUpdatePydantic(BaseModel):
-    name: Optional[str] # Contract name
-    offeree_id: Optional[int]
-    currency_code: Optional[str]
-    upon_signing: Optional[int] # % of total
-    upon_completion: Optional[int] # % rest
-    payment_method: Optional[str]
-    performance_fee: Decimal = Field(decimal_places=2)
-    travel_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
-    accommodation_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
-    other_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
-    total_fee: Decimal = Field(decimal_places=2)  # Will be auto-filled
-    disabled:  Optional[bool] = Field(False)  # Default to False
+    id: Optional[int] = None # Optional for creation, required for return.
+    name: Optional[str] = None # Contract name
+    offeree_id: Optional[int] = None
+    currency_code: Optional[str] = None
+    upon_signing: Optional[int] = None # % of total
+    upon_completion: Optional[int] = None # % rest
+    payment_method: Optional[str] = None
+
+    performance_fee: Optional[Decimal] = Field(default=None, decimal_places=2)
+
+    travel_expenses: Optional[Decimal] = Field(default=Decimal('0.00'), decimal_places=2)
+    accommodation_expenses: Optional[Decimal] = Field(default=Decimal('0.00'), decimal_places=2)
+    other_expenses: Optional[Decimal] = Field(default=Decimal('0.00'), decimal_places=2)
+
+    total_fee: Optional[Decimal] = Field(default=None, decimal_places=2, exclude=True)
+
+    disabled: Optional[bool] = Field(default=False)  # Default to False
     # disabled_at: Optional[datetime] = None # format 2026-10-27T16:00:00
     # signed_at: Optional[datetime] = None # format 2026-10-27T16:00:00
     # delete_date: Optional[datetime] = None # format 2026-10-27T16:00:00
@@ -275,24 +282,25 @@ class EventPydantic(BaseModel):
 
 
 class EventUpdatePydantic(BaseModel):
-    name: Optional[str]  # Event name
-    contract_id: Optional[int]
-    profile_offeror_id: Optional[int]
-    profile_offeree_id: Optional[int]
+    id: Optional[int] = None # Optional for creation, required for return.
+    name: Optional[str] = None  # Event name
+    contract_id: Optional[int] = None
+    profile_offeror_id: Optional[int] = None
+    profile_offeree_id: Optional[int] = None
     contact_person: Optional[str] = None
     contact_phone: Optional[str] = None
-    date: Optional[date]
-    duration: Optional[timedelta] # format PT1H30M
-    start: Optional[time]
-    end: Optional[time]
+    date: Optional[date] = None
+    duration: Optional[timedelta] = None # format PT1H30M
+    start: Optional[time] = None
+    end: Optional[time] = None
     arrive: Optional[datetime] = None # format 2026-10-27T16:00:00
     stage_set: Optional[time] = None
     stage_check: Optional[time] = None
     catering_open: Optional[time] = None
     catering_close: Optional[time] = None
     meal_time: Optional[time] = None
-    meal_location_name: Optional[str]
-    meal_location_address: Optional[str]
+    meal_location_name: Optional[str] = None
+    meal_location_address: Optional[str] = None
     accommodation_id: Optional[int] = None
 
     @field_validator("start", "arrive", "stage_set", "stage_check", "catering_open", "catering_close", "meal_time")

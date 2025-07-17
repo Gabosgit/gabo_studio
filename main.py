@@ -290,7 +290,7 @@ async def get_profile(
 @handle_exceptions
 async def update_profile(
     profile_id: int,
-    profile_data: ProfilePydantic,
+    profile_data: ProfileUpdatePydantic,
     common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
 ):
     """
@@ -299,6 +299,7 @@ async def update_profile(
         :param common_dependencies: current_user, data_manager, db
         :return: updated profile data or HTTPException
         """
+
     current_user, db, data_manager = common_dependencies
     updated_profile_data = data_manager.update_profile(profile_id, profile_data, current_user.id, db)
     return updated_profile_data
@@ -351,6 +352,7 @@ async def get_contract(
     current_user, db, data_manager = common_dependencies
     contract_dict = data_manager.get_contract_by_id(contract_id, current_user.id, db)
     events_in_contract = data_manager.get_contract_events(contract_id, current_user.id, db)
+    #return contract_dict
     return {"contract_data": contract_dict, "contract_event_ids": events_in_contract}
 
 
@@ -437,9 +439,9 @@ async def get_event(
     :return: event data or HTTPException
     """
     current_user, db, data_manager = common_dependencies
-    event_data = data_manager.get_event_by_id(event_id, current_user.id, db).dict()
+    event_data = data_manager.get_event_by_id(event_id, current_user.id, db).model_dump()
     if event_data['accommodation_id']:
-        accommodation_data = data_manager.get_accommodation_by_id(event_data['accommodation_id'] ,db).dict()
+        accommodation_data = data_manager.get_accommodation_by_id(event_data['accommodation_id'] ,db).model_dump()
         event_data["accommodation"] = accommodation_data
     return event_data
 

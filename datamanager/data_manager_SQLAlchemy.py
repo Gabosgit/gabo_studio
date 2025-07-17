@@ -11,7 +11,7 @@ from sqlalchemy import exc, or_  # Import exception handling
 from .models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, UserUpdatePydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
-    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic
+    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic, TitleAndUrl
 from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException,
                                            ResourcesMismatchException, InvalidContractException)
 
@@ -266,7 +266,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
             profile_data_to_update: ProfileUpdatePydantic,
             current_user_id,
             db: Session)\
-            -> Optional[ProfileUpdatePydantic]:
+            -> Optional[ProfilePydantic]:
 
             profile = db.query(Profile).filter(Profile.id == profile_id).first()
 
@@ -279,20 +279,23 @@ class SQLAlchemyDataManager(DataManagerInterface):
             # Converts Pydantic model to a dictionary.
             # Excludes any fields that were not provided (unset) in the request.
             # Uses the exclude_unset=True pydantic method
-            profile_data_to_update = profile_data_to_update.model_dump(exclude_unset=True)
-
-            # Convert HttpUrl objects to strings
-            # If a value is an HttpUrl object, it's converted to a string using str(value).
-            # If a value is a list of HttpUrl objects, the list is converted to a list of strings.
-            for key, value in profile_data_to_update.items():
+            for key, value in profile_data_to_update.model_dump(exclude_unset=True).items():
                 if isinstance(value, HttpUrl):
-                    profile_data_to_update[key] = str(value)
-                elif isinstance(value, list) and all(isinstance(item, HttpUrl) for item in value):
-                    profile_data_to_update[key] = [str(item) for item in value]
-
-            # Updates the values of the corresponding fields
-            for key, value in profile_data_to_update.items():
-                setattr(profile, key, value)
+                    setattr(profile, key, str(value))
+                elif isinstance(value, list):  # Check if it's a list first
+                    # Check for list of HttpUrl
+                    if all(isinstance(item, HttpUrl) for item in value):
+                        setattr(profile, key, [str(item) for item in value])
+                    # Check for list of TitleAndUrl
+                    elif all(isinstance(item, TitleAndUrl) for item in value):
+                        # It's stored as a list of dicts:
+                        setattr(profile, key, [item.model_dump() for item in value])
+                    else:
+                        # If there are other list types, handle them or raise error
+                        setattr(profile, key, value)  # Fallback for other list types
+                else:
+                    # For all other scalar types (str, int, bool, etc.)
+                    setattr(profile, key, value)
 
             db.commit()
             db.refresh(profile)

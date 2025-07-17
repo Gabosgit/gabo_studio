@@ -1,5 +1,26 @@
+import pdb
+
 import pytest
 from unittest.mock import patch
+
+from sqlalchemy.sql.functions import current_user
+
+from pydantic_models import UserUpdatePydantic
+from test.conftest import user_data
+
+@pytest.fixture
+def user_data_to_update():
+    """
+        Sample profile data for testing an update.
+        Default scope="function" as no specified: it will be executed before every single test function.
+        This fixture should ideally contain *changes* from the original profile_data to simulate an update.
+    """
+    return {
+        "username": "Updated User Name",
+        "type_of_entity": "Updated type of entity",
+        "email_address": "updated_email@example.com"
+    }
+
 
 @pytest.mark.usefixtures("setup_common_dependencies_override", "setup_db_and_datamanager_override")
 class TestUserEndpoints:
@@ -27,7 +48,7 @@ class TestUserEndpoints:
         """ This simulates a client """
         response = test_client.get(f"/user/{user_id}")
         """ The test_client is used to send a simulated GET request to the /user/{user_id} endpoint of the FastAPI application. 
-            Because setup_dependencies has overridden the application's dependencies, 
+            Because setup_common_dependencies_override has overridden the application's dependencies, 
             when the API route for /user/{user_id} internally calls get_common_dependencies (which then likely calls mock_data_manager.get_user_by_id), 
             it will receive the pre-configured mock_data_manager and its behavior. 
             The mock returns the mock_user object as configured in the Arrange phase.
@@ -78,6 +99,7 @@ class TestUserEndpoints:
         assert response.json() == user_data
         mock_data_manager.get_user_by_id.assert_called_with(mock_auth_user.id, mock_db)
 
+
     def test_create_user(self, test_client, mock_data_manager, mock_db, mock_auth_user):
         """Test user creation endpoint."""
         # Setup
@@ -113,3 +135,40 @@ class TestUserEndpoints:
         # Verify profile data was passed correctly
         call_args = mock_data_manager.create_user.call_args
         assert call_args[0][0].name == user_data["name"]
+
+
+    def test_update_user(self, test_client, mock_data_manager, mock_db, mock_auth_user, user_data_to_update, mock_user):
+        # Setup
+        current_user_id = 1
+
+        # Create an expected Pydantic object that reflects the *result* of the update
+        # This combines the original mock_user's data with the changes from user_data_to_update.
+        # We also set the ID to match what the endpoint expects.
+        expected_returned_user = mock_user.model_copy(update=user_data_to_update)
+        # Ensure the ID matches the one being updated in the URL
+        expected_returned_user.id = current_user_id
+
+        mock_data_manager.update_user.return_value = expected_returned_user
+
+        # Execute
+        response = test_client.patch(
+            "/user",
+            headers={"Authorization": "Bearer fake.jwt.token"},
+            json=user_data_to_update
+        )
+
+        # Verify
+        assert response.status_code == 200
+        #pdb.set_trace()
+        assert response.json() == expected_returned_user.model_dump(mode='json')
+
+        # Create a Pydantic model that matches the structure `update_user`
+        # method expects for the data to be updated.
+        expected_update_payload = UserUpdatePydantic(**user_data_to_update)
+
+        mock_data_manager.update_user.assert_called_once_with(
+            # The order of arguments to the mocked method matters for assert_called_with.
+            expected_update_payload,  # `update_user` expects a UserUpdatePydantic model
+            mock_auth_user.id,  # Ensure the user ID is passed
+            mock_db
+        )

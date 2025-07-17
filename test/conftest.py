@@ -13,13 +13,6 @@ from sqlalchemy.orm import Session # Import Session for mock_db spec if needed
 # as they don't depend on environment variables for their definition)
 from pydantic_models import UserAuthPydantic, UserNoPwdPydantic
 
-# Optional: If you have AccommodationPydantic or other models, import them here
-# from pydantic_models import AccommodationPydantic
-# from datetime import datetime
-# import re
-# from pydantic import EmailStr, HttpUrl, BaseModel, field_validator
-# from typing import Optional
-
 
 @pytest.fixture(scope="session", autouse=True)
 def set_test_env():
@@ -175,7 +168,7 @@ def setup_db_and_datamanager_override(
 @pytest.fixture
 def user_data():
     """
-        Sample user data for testing. This dictionary serves as a convenient and consistent set of input data.
+        Sample user data recorded in DB, for testing.
         Default scope="function" as no specified: it will be executed before every single test function.
         Changes in other functions will not affect subsequent test functions because each test gets its own fresh copy.
     """
@@ -202,4 +195,4 @@ def mock_user(user_data):
         This means mock_user will be created before every test function that requests it
         The result of instantiating UserNoPwdPydantic with the sample data is then returned by the mock_user fixture.
     """
-    return UserNoPwdPydantic(**user_data)
+    return UserNoPwdPydantic(**user_data) # ** dictionary unpacking operator
