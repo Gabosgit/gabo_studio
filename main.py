@@ -15,7 +15,9 @@ from datamanager.db_dependencies import get_data_manager
 
 from typing import Annotated
 from datetime import timedelta, datetime
-from Oauth2 import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token
+from core.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from services.auth_service import AuthService # Import the class for type hinting
+from security import get_auth_service
 from dependencies import get_common_dependencies
 
 from fastapi.middleware.cors import CORSMiddleware # To allow requests from a react app
@@ -105,7 +107,6 @@ async def upload_multiple_images(files: List[UploadFile] = File(...)):
         print(f"Error during multiple image uploads: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to upload images: {str(e)}")
 
-
 # UPLOAD
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
@@ -120,14 +121,11 @@ async def upload_image(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # ROOT ROUTE
 @app.get("/", tags=["Home"])
 async def root():
     """ Welcome message """
     return {"message": "Welcome to Create connections Pro"}
-
-
 
 
 
@@ -137,7 +135,8 @@ async def root():
 @app.post("/token", tags=["User"])
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], # Depends() tells FastAPI to automatically inject form_data into the function.
-    db: SessionLocal = Depends(get_db)
+    db: SessionLocal = Depends(get_db),
+    auth_service: AuthService = Depends(get_auth_service)  # <--- Inject AuthService here!
 ) -> Token: #-> Token: This type hint indicates that the function returns an object of type Token
     """
         The client sends a POST request to the /token endpoint with their username and password.
@@ -148,7 +147,7 @@ async def login_for_access_token(
         :param form_data: parameter of type OAuth2PasswordRequestForm
         :return: object of type Token, assumed to be a Pydantic model
     """
-    user = authenticate_user(db, form_data.username, form_data.password) # Function to verify the user's credentials.
+    user = auth_service.authenticate_user(db, form_data.username, form_data.password) # Function to verify the user's credentials.
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -157,7 +156,7 @@ async def login_for_access_token(
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     # function to generate the JWT
-    access_token = create_access_token(
+    access_token = auth_service.create_access_token(
         data={
             "sub": user.username},
             expires_delta=access_token_expires
@@ -168,32 +167,96 @@ async def login_for_access_token(
     return Token(access_token=access_token, token_type="bearer")
 
 
-@app.post("/user", tags=["User"])
+@app.post("/user", response_model=dict, status_code=status.HTTP_201_CREATED, tags=["User"])
 @handle_exceptions
 async def sign_up(
         user_data: UserCreatePydantic,
-        data_manager: SQLAlchemyDataManager = Depends(get_data_manager)):
+        db: Session = Depends(get_db),
+        auth_service: AuthService = Depends(get_auth_service)
+):
+    """Registers a new user.
+        :param user_data: dict with all user date from the post request
+        :return: id new user or HTTPException
     """
-    :param user_data: dict with all user date from the post request
-    :param data_manager: to call the create_user() function from data_manager_SQL_Alchemy.py
-    :return: id new user or HTTPException
-    """
-    user_id = data_manager.create_user(user_data)
-    return {"user_id": user_id} # FastAPI automatically converts the Python dictionary {"user_id": user_id} into a JSON response
-
-
+    try:
+        user_id = await auth_service.register_user(user_data, db)
+        return {"user_id": user_id} # FastAPI automatically converts the Python dictionary {"user_id": user_id} into a JSON response
+    except ValueError as e:
+        # Caught from AuthService, e.g., "Username 'X' or email 'Y' already exists."
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,  # 409 Conflict for resource already exists
+            detail=str(e)
+        )
+    except RuntimeError as e:
+        # Caught from AuthService for unexpected DB errors
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    except Exception as e:
+        # Catch any other unexpected errors
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during user registration."
+        )
 
 @app.post("/change_password", tags=["User Management"])
 async def change_password(
     request: ChangePasswordRequest,
-    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)]
+    common_dependencies: Annotated[tuple, Depends(get_common_dependencies)],
+    auth_service: AuthService = Depends(get_auth_service)  # Inject the AuthService instance
 ):
+    """
+        Allows a logged-in user to change their password.
+        Requires the old password for verification.
+    """
     current_user, db, data_manager = common_dependencies
-    password_changed = data_manager.change_password(request, current_user, db)
-
-    if password_changed:
+    try:
+        # Pass the current_user's ID and the hashed password from the DB (current_user.password)
+        await auth_service.change_user_password(
+            user_id=current_user.id,
+            current_hashed_password_from_db=current_user.password,
+            old_password_attempt=request.old_password,
+            new_password=request.new_password,
+            db=db
+        )
         return {"message": "Password changed successfully."}
 
+    except ValueError as e:
+        # Catch specific business logic errors from AuthService
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)  # e.g., "Incorrect old password."
+        )
+    except RuntimeError as e:
+        # Catch unexpected operational errors (e.g., user not found for update, which is rare here)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An internal error occurred while changing password."
+        )
+    except Exception as e:
+        # Catch any other unexpected exceptions
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {e}"
+        )
+
+
+
+
+@router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
+async def forgot_password(request: ForgotPasswordRequest):
+    user = await data_manager.get_user_by_email(request.email)
+    if user:
+        token = secrets.token_urlsafe(32)
+        hashed_token = pwd_context.hash(token)
+        expires_at = datetime.utcnow() + timedelta(minutes=60) # Token valid for 60 minutes
+
+        await data_manager.create_reset_token(user.id, hashed_token, expires_at)
+        await send_password_reset_email(request.email, token, "http://localhost:8000") # Replace with your frontend URL
+
+    # Always return a generic success message to prevent user enumeration
+    return {"message": "If an account with that email exists, a password reset link has been sent."}
 
 
 @app.get("/user/me/", response_model=UserNoPwdPydantic, tags=["User"])
@@ -221,6 +284,7 @@ async def get_user_by_id(
     current_user, db, data_manager = common_dependencies
     user_by_id = data_manager.get_user_by_id(user_id, db)
     return  user_by_id
+
 
 @app.patch("/user", tags=["User"])
 @handle_exceptions
@@ -511,6 +575,7 @@ async def delete_event(
     current_user, db, data_manager = common_dependencies
     data_manager.delete_event(event_id, current_user.id, db)
     return {"message": "Event deleted successfully"}
+
 
 
 

@@ -10,7 +10,7 @@ class DataManagerInterface(ABC):
 
 # User related
     @abstractmethod
-    def create_user(self, user_data: dict) -> int:  # Returns user ID
+    def create_user(self, user_data: dict, hashed_password: str, db) -> int:  # Returns user ID
         """ Creates a new user. """
         pass
 

@@ -1,6 +1,8 @@
 """
     Data manager for SQLAlchemy
 """
+import pdb
+
 from fastapi import HTTPException, status
 from pydantic import HttpUrl
 
@@ -8,7 +10,7 @@ from datamanager.data_manager_interface import DataManagerInterface
 from sqlalchemy.orm import Session
 from typing import Optional
 from sqlalchemy import exc, or_  # Import exception handling
-from .models import User, Profile, Contract, Event, Accommodation
+from datamanager.models import User, Profile, Contract, Event, Accommodation
 from pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
     EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic, TitleAndUrl, \
@@ -21,22 +23,20 @@ class SQLAlchemyDataManager(DataManagerInterface):
     def __init__(self, session: Session):
         self.session = session
 
-### User related
-    def create_user(self, user_data: UserCreatePydantic) -> int:
+
+# -----    User related     -----
+
+    def create_user(self, user_data: UserCreatePydantic, hashed_password: str, db: Session) -> int:
         """
-            Creates a new user and returns the user ID.
-            Validate the input data with UserCreatePydantic
-            :param user_data: from query body
-            :return: id created user
+        Creates a new user in the database with an already hashed password.
+        Returns the ID of the created user.
+        Raises ValueError if username or email already exists.
         """
-        print("anything")
-        from Oauth2 import get_password_hash # Imported here to avoid loop
         try:
-            hashed_pwd = get_password_hash(user_data.password)  # Hash the password
             new_user = User(
                 username=user_data.username,
                 type_of_entity=user_data.type_of_entity,
-                password=hashed_pwd,  # Use the hashed password
+                password=hashed_password,  # Use the already hashed password
                 name=user_data.name,
                 surname=user_data.surname,
                 email_address=user_data.email_address,
@@ -44,61 +44,39 @@ class SQLAlchemyDataManager(DataManagerInterface):
                 vat_id=user_data.vat_id,
                 bank_account=user_data.bank_account,
                 is_active=user_data.is_active,
-                deactivation_date=user_data.deactivation_date
+                # Ensure deactivation_date is handled correctly, it can be None
+                deactivation_date=user_data.deactivation_date if hasattr(user_data, 'deactivation_date') else None
             )
-            self.session.add(new_user)
-            self.session.commit()
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)  # Refresh to get auto-generated ID if needed
             return new_user.id
 
-        # IntegrityError is a reporting from SQLAlchemy
-        except exc.IntegrityError:  # Handle unique constraint violations EX: username or email already exists
-            self.session.rollback()
-            raise ValueError(f"Username '{user_data.username}' or email '{user_data.email_address}' already exists.") # Or other exception.
-        except KeyError as e: # Handle missing keys
-            self.session.rollback()
-            print(f"Missing key in user_data: {e}")
-            raise ValueError(f"Missing key in user_data: {e}")
-        except Exception as e: # Handle all other errors.
-            self.session.rollback()
-            print(f"An unexpected error occurred: {e}")
-            raise ValueError(f"An unexpected error occurred: {e}")
+        except exc.IntegrityError:
+            db.rollback()
+            # This is a good place to raise a more specific exception or detailed message
+            raise ValueError(f"Username '{user_data.username}' or email '{user_data.email_address}' already exists.")
+        except Exception as e:
+            db.rollback()
+            # Log the error for debugging
+            print(f"An unexpected error occurred during user creation: {e}")
+            raise RuntimeError(f"An unexpected error occurred during user creation.")  # Raise a generic runtime error
 
-    @staticmethod
-    def change_password(request: ChangePasswordRequest, current_user, db: Session):
+
+    def update_user_password(self, user_id: int, new_hashed_password: str, db: Session) -> bool:
         """
-            Allows a logged-in user to change their password.
-            Requires the old password for verification.
+        Updates a user's password in the database given their user_id and the new hashed password.
+        Returns True on success, False if the user_id is not found.
         """
-        # 1. Verify the old password
-        from Oauth2 import verify_password, get_password_hash
-        # current_user.password holds the hashed password from the DB (due to UserAuthPydantic mapping)
-        if not verify_password(request.old_password, current_user.password):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Incorrect old password."
-            )
-
-        # 2. Hash the new password
-        hashed_new_password = get_password_hash(request.new_password)
-
-        # 3. Update the user's password in the database
-        # Retrieve the actual SQLAlchemy ORM object to update
-        db_user = db.query(User).filter(User.username == current_user.username).first()
+        db_user = db.query(User).filter(User.id == user_id).first()
         if not db_user:
-            # This should ideally not happen if the get_current_active_user works correctly
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found in DB.")
+            return False  # User not found to update
 
-        db_user.password = hashed_new_password  # Update the password field
+        db_user.password = new_hashed_password
         db.add(db_user)  # Mark the object as dirty
         db.commit()  # Commit the transaction
         db.refresh(db_user)  # Refresh the instance to get updated values
-
-        # 4. (Optional but Recommended) Invalidate current sessions/tokens
-        # For JWTs, relying on expiration is common. If you need immediate invalidation,
-        # you'd implement a JWT blacklist (e.g., in Redis) and check it in get_current_user.
-        # For this example, we'll just return a success message.
-
-        return True  # Indicate successful password change
+        return True
 
 
     def get_user_by_id(self, user_id: int, db: Session) -> Optional[UserNoPwdPydantic]:
@@ -123,6 +101,45 @@ class SQLAlchemyDataManager(DataManagerInterface):
             bank_account=user.bank_account,
             is_active=user.is_active
         )
+
+
+    def get_user_by_username(self, username: str, db: Session) -> Optional[UserAuthPydantic]:
+        """
+        Retrieves a user by username from the database, including the hashed password.
+        Returns a UserAuthPydantic object or None if not found.
+        """
+        user = db.query(User).filter(User.username == username).first()
+        if user:
+            return UserAuthPydantic(
+                id=user.id,
+                username=user.username,
+                password=user.password,
+                is_active=user.is_active
+            )
+        return None
+
+    def get_user_by_email(self, email_request: str, db: Session) -> Optional[UserNoPwdPydantic]:
+        """
+            Retrieves a user by email, excluding the hashed password.
+            Return a UserNoPwdPydantic object with the user infos, no password.
+        """
+        user = db.query(User).filter(User.email_address == email_request).first()
+
+        if user:
+            return UserNoPwdPydantic(
+                id=user.id,
+                username=user.username,
+                type_of_entity=user.type_of_entity,
+                name=user.name,
+                surname=user.surname,
+                email_address=user.email_address,
+                phone_number=user.phone_number,
+                vat_id=user.vat_id,
+                bank_account=user.bank_account,
+                is_active=user.is_active
+            )
+        else:
+            return None # Explicitly return None if no user is found
 
 
     def update_user(self, user_data_to_update: UserAuthPydantic, current_user_id: int, db):
@@ -186,8 +203,8 @@ class SQLAlchemyDataManager(DataManagerInterface):
         else:
             return None
 
-    @staticmethod
-    def get_user_contracts(user_id: int, db: Session):
+
+    def get_user_contracts(self, user_id: int, db: Session):
         """
         :param user_id:
         :param db: database
@@ -396,8 +413,8 @@ class SQLAlchemyDataManager(DataManagerInterface):
             db.rollback()
             raise e
 
-    @staticmethod
-    def get_contract_events(contract_id: int, current_user_id: int, db: Session) -> list:
+
+    def get_contract_events(self, contract_id: int, current_user_id: int, db: Session) -> list:
         """
         :param contract_id: to get events
         :param current_user_id: to check if the contract belongs to the user
@@ -522,8 +539,8 @@ class SQLAlchemyDataManager(DataManagerInterface):
                     "deactivation date": disabled_at
                     }
 
-    @staticmethod
-    def get_contract_events_id_and_name(contract_id: int, db: Session):
+
+    def get_contract_events_id_and_name(self, contract_id: int, db: Session):
         """
         :param contract_id:
         :param db:

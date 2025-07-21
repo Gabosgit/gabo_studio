@@ -1,7 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from typing import Annotated, Tuple
-from Oauth2 import get_current_active_user
+from security import get_current_active_user
 from pydantic_models import UserAuthPydantic
 from datamanager.database import get_db
 from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
