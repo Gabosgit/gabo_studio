@@ -43,6 +43,7 @@ async def get_current_user(
     Decodes the token and extracts the username.
     Retrieves the corresponding user from the database.
     Returns the user object if authentication is successful; otherwise, it raises an HTTPException indicating unauthorized access.
+    :param auth_service:
     :param token: JWT token from the request
     :param db: Database session
     :return: user object
@@ -82,22 +83,3 @@ async def get_current_active_user(
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
-
-# Note: The `create_access_token` function is now in auth_service.py.
-# If your main FastAPI app needs to generate tokens (e.g., in a /token endpoint),
-# you would import it from auth_service:
-# from auth_service import auth_service # Assuming auth_service is the instance
-# @app.post("/token")
-# async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-#     user = auth_service.authenticate_user(db, form_data.username, form_data.password)
-#     if not user:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Incorrect username or password",
-#             headers={"WWW-Authenticate": "Bearer"},
-#         )
-#     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES) # ACCESS_TOKEN_EXPIRE_MINUTES is still defined in auth_service.py
-#     access_token = auth_service.create_access_token(
-#         data={"sub": user.username}, expires_delta=access_token_expires
-#     )
-#     return {"access_token": access_token, "token_type": "bearer"}

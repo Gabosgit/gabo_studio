@@ -35,6 +35,22 @@ class User(Base):
 
     profiles: Mapped[List["Profile"]] = relationship(back_populates="user")
 
+    # Relationship to PasswordResetToken
+    # Use Mapped for type hinting, and relationship for ORM mapping
+    reset_tokens: Mapped[List["PasswordResetToken"]] = relationship(back_populates="user")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False) # Store the hashed token
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False) # date and time.
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now()) # func.now() lets the database itself generate the timestamp, in the database's time zone.
+
+    # Relationship back to User
+    user: Mapped["User"] = relationship(back_populates="reset_tokens")
+
 
 class Profile(Base):
     __tablename__ = 'profile'
@@ -56,6 +72,7 @@ class Profile(Base):
     # Use JSONB for better performance and indexing on PostgresSQL
     online_press: Mapped[list[dict]] = mapped_column(postgresql.JSONB, nullable=True)
 
+    # Relationship back to User
     user: Mapped["User"] = relationship(back_populates="profiles")
 
 

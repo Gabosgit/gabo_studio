@@ -1,17 +1,21 @@
 """ USER ROUTES """
+import secrets
+
 from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 
 from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
 from app.datamanager.database import SessionLocal, get_db
+from app.datamanager.db_dependencies import get_data_manager
 from app.datamanager.exceptions_handler import handle_exceptions
-from app.services.auth_service import AuthService # Import the class for type hinting
+from app.services.auth_service import AuthService, InvalidTokenError, ExpiredTokenError, UserNotFoundError # <-- Import custom exceptions  # Import the class for type hinting
 from app.api.security import get_auth_service
 from app.api.dependencies import get_common_dependencies
 from app.schemas.pydantic_models import Token, UserCreatePydantic, ChangePasswordRequest, ForgotPasswordRequest, \
-    UserNoPwdPydantic, UserUpdatePydantic
+    UserNoPwdPydantic, UserUpdatePydantic, ResetPasswordRequest
 from datetime import timedelta, datetime
 
 
@@ -133,23 +137,61 @@ async def change_password(
 
 
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
-async def forgot_password(request: ForgotPasswordRequest):
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    auth_service: AuthService = Depends(get_auth_service), # Inject AuthService
+    db: Session = Depends(get_db) # Inject DB session
+):
     """
-
-    :param request:
-    :return:
+    Initiates a password reset process. A reset link will be sent to the provided email address
+    if an account with that email exists.
     """
-    user = await data_manager.get_user_by_email(request.email)
-    if user:
-        token = secrets.token_urlsafe(32)
-        hashed_token = pwd_context.hash(token)
-        expires_at = datetime.utcnow() + timedelta(minutes=60) # Token valid for 60 minutes
+    # Define your frontend URL where the user will reset their password
+    frontend_reset_url = "http://localhost:5173" # <-- IMPORTANT: Replace with actual frontend URL
 
-        await data_manager.create_reset_token(user.id, hashed_token, expires_at)
-        await send_password_reset_email(request.email, token, "http://localhost:8000") # Replace with your frontend URL
+    # Delegate the business logic to the AuthService
+    await auth_service.handle_forgot_password(request.email, db, frontend_reset_url)
 
     # Always return a generic success message to prevent user enumeration
     return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK, tags=["User Authentication"])
+async def reset_password(
+    request: ResetPasswordRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+    db: Session = Depends(get_db)
+):
+    """
+    Resets a user's password using a valid password reset token.
+    """
+    try:
+        await auth_service.reset_user_password(request.token, request.new_password, db)
+        return {"message": "Password has been successfully reset."}
+    except InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, # Or 401 Unauthorized if you prefer
+            detail=str(e) # "Invalid or already used password reset token."
+        )
+    except ExpiredTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, # Or 401 Unauthorized
+            detail=str(e) # "Password reset token has expired."
+        )
+    except UserNotFoundError as e:
+        # This case implies a token pointed to a non-existent user,
+        # which is an internal inconsistency, so 500 might be appropriate.
+        # Or, if you want to be vague for security, return a generic message.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An internal error occurred. Please try again or contact support."
+        )
+    except Exception as e:
+        # Catch any other unexpected errors
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {e}"
+        )
 
 
 @router.get("/user/me/", response_model=UserNoPwdPydantic)

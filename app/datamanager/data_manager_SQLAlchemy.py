@@ -1,14 +1,14 @@
 """
     Data manager for SQLAlchemy
 """
-
 from pydantic import HttpUrl
 
 from app.datamanager.data_manager_interface import DataManagerInterface
 from sqlalchemy.orm import Session
 from typing import Optional
+from datetime import datetime
 from sqlalchemy import exc, or_  # Import exception handling
-from app.datamanager.models import User, Profile, Contract, Event, Accommodation
+from app.datamanager.models import User, Profile, Contract, Event, Accommodation, PasswordResetToken
 from app.schemas.pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
     EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic, TitleAndUrl
@@ -19,6 +19,40 @@ from app.datamanager.exception_classes import (ResourceNotFoundException, Resour
 class SQLAlchemyDataManager(DataManagerInterface):
     def __init__(self, session: Session):
         self.session = session
+
+    def create_reset_token(self, user_id: int, hashed_token: str, expires_at: datetime, db: Session) -> None:
+        """
+        Creates a new password reset token entry in the database.
+        """
+        # Optional: Invalidate any existing tokens for this user first
+        db.query(PasswordResetToken).filter(PasswordResetToken.user_id == user_id).delete()
+        db.commit()
+
+        new_token = PasswordResetToken(
+            user_id=user_id,
+            token_hash=hashed_token,  # Assuming your model field is token_hash
+            expires_at=expires_at,
+            created_at=datetime.now()  # Or use a default in your model
+        )
+        db.add(new_token)
+        db.commit()
+        db.refresh(new_token)  # If you need the ID of the token record
+
+    def get_reset_token_by_hash(self, hashed_token: str, db: Session) -> Optional[PasswordResetToken]:
+        """
+        Retrieves a password reset token record by its hashed value.
+        """
+        return db.query(PasswordResetToken).filter(PasswordResetToken.token_hash == hashed_token).first()
+
+    def delete_reset_token(self, token_id: int, db: Session) -> None:
+        """
+        Deletes a specific password reset token record from the database.
+        This effectively invalidates the token.
+        """
+        token_to_delete = db.query(PasswordResetToken).filter(PasswordResetToken.id == token_id).first()
+        if token_to_delete:
+            db.delete(token_to_delete)
+            db.commit()
 
 
 # -----    User related     -----
@@ -114,6 +148,7 @@ class SQLAlchemyDataManager(DataManagerInterface):
                 is_active=user.is_active
             )
         return None
+
 
     def get_user_by_email(self, email_request: str, db: Session) -> Optional[UserNoPwdPydantic]:
         """
