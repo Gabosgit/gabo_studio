@@ -1,8 +1,6 @@
-import pdb
-
 import pytest
 
-from pydantic_models import ContractPydantic, ContractUpdatePydantic
+from app.schemas.pydantic_models import ContractPydantic, ContractUpdatePydantic
 
 
 @pytest.fixture

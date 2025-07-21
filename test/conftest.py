@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session # Import Session for mock_db spec if needed
 
 # Import your Pydantic models (these can be imported at the top level
 # as they don't depend on environment variables for their definition)
-from pydantic_models import UserAuthPydantic, UserNoPwdPydantic
+from app.schemas.pydantic_models import UserAuthPydantic, UserNoPwdPydantic
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -34,10 +34,10 @@ def set_test_env():
         # IMPORTANT: Import your application components *inside* this context manager.
         # This ensures they read the patched environment variables during their initial load.
         from main import app # Your FastAPI app instance
-        from dependencies import get_common_dependencies # A common dependency function for auth/db/data_manager
-        from datamanager.database import get_db # Your database session dependency
-        from datamanager.db_dependencies import get_data_manager # Your data manager dependency
-        from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager # The actual class you are mocking
+        from app.api.dependencies import get_common_dependencies # A common dependency function for auth/db/data_manager
+        from app.datamanager.database import get_db # Your database session dependency
+        from app.datamanager.db_dependencies import get_data_manager # Your data manager dependency
+        from app.datamanager import SQLAlchemyDataManager # The actual class you are mocking
 
         # Yield these imported objects. This makes them available to other fixtures
         # that depend on 'set_test_env'.

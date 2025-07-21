@@ -1,8 +1,6 @@
-import pdb
-
 import pytest
 
-from pydantic_models import ProfilePydantic, ProfileUpdatePydantic
+from app.schemas.pydantic_models import ProfilePydantic, ProfileUpdatePydantic
 
 
 @pytest.fixture

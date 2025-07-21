@@ -1,22 +1,19 @@
 """
     Data manager for SQLAlchemy
 """
-import pdb
 
-from fastapi import HTTPException, status
 from pydantic import HttpUrl
 
-from datamanager.data_manager_interface import DataManagerInterface
+from app.datamanager.data_manager_interface import DataManagerInterface
 from sqlalchemy.orm import Session
 from typing import Optional
 from sqlalchemy import exc, or_  # Import exception handling
-from datamanager.models import User, Profile, Contract, Event, Accommodation
-from pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
+from app.datamanager.models import User, Profile, Contract, Event, Accommodation
+from app.schemas.pydantic_models import ProfilePydantic, ContractPydantic, UserCreatePydantic, UserNoPwdPydantic, \
     EventPydantic, AccommodationPydantic, ProfileUpdatePydantic, ContractUpdatePydantic, \
-    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic, TitleAndUrl, \
-    ChangePasswordRequest
-from datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException,
-                                           ResourcesMismatchException, InvalidContractException)
+    EventUpdatePydantic, AccommodationUpdatePydantic, ContractCreatePydantic, UserAuthPydantic, TitleAndUrl
+from app.datamanager.exception_classes import (ResourceNotFoundException, ResourceUserMismatchException,
+                                               ResourcesMismatchException, InvalidContractException)
 
 
 class SQLAlchemyDataManager(DataManagerInterface):

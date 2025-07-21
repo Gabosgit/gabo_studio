@@ -1,11 +1,10 @@
 from functools import wraps
 
 from fastapi import FastAPI, Request, HTTPException, status
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
-from datamanager.exception_classes import (
+from app.datamanager.exception_classes import (
     ResourceNotFoundException,
     ResourceUserMismatchException, ResourcesMismatchException, InvalidContractException
 )

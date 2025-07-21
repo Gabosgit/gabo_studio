@@ -1,11 +1,7 @@
-import pdb
-
 import pytest
 from unittest.mock import patch
 
-from sqlalchemy.sql.functions import current_user
-
-from pydantic_models import UserUpdatePydantic
+from app.schemas.pydantic_models import UserUpdatePydantic
 from test.conftest import user_data
 
 @pytest.fixture

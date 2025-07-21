@@ -1,8 +1,6 @@
-import pdb
-
 import pytest
 
-from pydantic_models import EventPydantic, AccommodationPydantic, EventUpdatePydantic
+from app.schemas.pydantic_models import EventPydantic, AccommodationPydantic, EventUpdatePydantic
 
 
 @pytest.fixture

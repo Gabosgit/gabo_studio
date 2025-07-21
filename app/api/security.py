@@ -1,6 +1,5 @@
 # security.py
 import os
-from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from dotenv import load_dotenv
 
@@ -10,11 +9,11 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm import Session
 
-from datamanager.db_dependencies import get_data_manager
-from pydantic_models import TokenData, UserAuthPydantic # Import your Pydantic models
-from datamanager.database import get_db, SessionLocal # Import database session helpers
-from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager # Import DataManager for get_user_by_username
-from services.auth_service import AuthService # Import the new AuthService
+from app.datamanager.db_dependencies import get_data_manager
+from app.schemas.pydantic_models import TokenData, UserAuthPydantic # Import your Pydantic models
+from app.datamanager.database import get_db  # Import database session helpers
+from app.datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager # Import DataManager for get_user_by_username
+from app.services.auth_service import AuthService # Import the new AuthService
 
 # Load environment variables
 load_dotenv()

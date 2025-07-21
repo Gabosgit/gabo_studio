@@ -3,8 +3,8 @@
 """
 from sqlalchemy.orm import Session
 from fastapi import Depends
-from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
-from datamanager.database import get_db
+from app.datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
+from app.datamanager.database import get_db
 
 
 def get_data_manager(db: Session = Depends(get_db)):

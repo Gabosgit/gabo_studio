@@ -1,11 +1,11 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from typing import Annotated, Tuple
-from security import get_current_active_user
-from pydantic_models import UserAuthPydantic
-from datamanager.database import get_db
-from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
-from datamanager.db_dependencies import get_data_manager
+from app.api.security import get_current_active_user
+from app.schemas.pydantic_models import UserAuthPydantic
+from app.datamanager.database import get_db
+from app.datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
+from app.datamanager.db_dependencies import get_data_manager
 
 async def get_common_dependencies(
     current_user: Annotated[UserAuthPydantic, Depends(get_current_active_user)],

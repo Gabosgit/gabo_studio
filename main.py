@@ -1,30 +1,28 @@
 """
     API to manage Users, User-Profiles, User_Contracts, User_Events, and Accommodations
 """
-import pdb
 
 from fastapi import Depends, APIRouter, FastAPI, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from datamanager.exceptions_handler import register_exception_handlers, handle_exceptions
-from pydantic_models import *
-from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
-from datamanager.database import SessionLocal, get_db
-from datamanager.db_dependencies import get_data_manager
+from app.datamanager.exceptions_handler import register_exception_handlers, handle_exceptions
+from app.schemas.pydantic_models import *
+from app.datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
+from app.datamanager.database import SessionLocal, get_db
+from app.datamanager.db_dependencies import get_data_manager
 
 from typing import Annotated
 from datetime import timedelta, datetime
-from core.config import ACCESS_TOKEN_EXPIRE_MINUTES
-from services.auth_service import AuthService # Import the class for type hinting
-from security import get_auth_service
-from dependencies import get_common_dependencies
+from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.services.auth_service import AuthService # Import the class for type hinting
+from app.api.security import get_auth_service
+from app.api.dependencies import get_common_dependencies
 
 from fastapi.middleware.cors import CORSMiddleware # To allow requests from a react app
 
 import cloudinary
 import cloudinary.uploader
-from cloudinary.utils import cloudinary_url
 
 from concurrent.futures import ThreadPoolExecutor # This is the key import for the executor
 import asyncio

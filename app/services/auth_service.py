@@ -5,10 +5,9 @@ from typing import Optional
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from datamanager.db_dependencies import get_data_manager
-from pydantic_models import UserAuthPydantic, UserCreatePydantic
-from datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
-from core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES # <--- Import from config
+from app.schemas.pydantic_models import UserAuthPydantic, UserCreatePydantic
+from app.datamanager.data_manager_SQLAlchemy import SQLAlchemyDataManager
+from app.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES # <--- Import from config
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
