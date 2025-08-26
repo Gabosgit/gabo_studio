@@ -1,0 +1,23 @@
+# Python-specific ignores
+__pycache__/
+*.pyc
+*.pytest_cache/
+
+# Virtual environment
+venv/
+
+# IDE specific files
+.idea/
+
+# Git ignore file (not needed in the image)
+.gitignore
+
+# Environment variables (typically passed at runtime or managed differently)
+.env
+
+# Tests (usually not needed in production images)
+test/
+
+# Documentation and Dockerfile itself
+README.md
+Dockerfile

@@ -46,7 +46,7 @@ async def get_profile(
     return profile_dict
 
 
-@router.put("/profile/{profile_id}")
+@router.patch("/profile/{profile_id}")
 @handle_exceptions
 async def update_profile(
     profile_id: int,

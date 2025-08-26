@@ -55,8 +55,8 @@ class SQLAlchemyDataManager(DataManagerInterface):
             db.commit()
 
 
-# -----    User related     -----
 
+# -----    User related     -----
     def create_user(self, user_data: UserCreatePydantic, hashed_password: str, db: Session) -> int:
         """
         Creates a new user in the database with an already hashed password.
@@ -366,22 +366,16 @@ class SQLAlchemyDataManager(DataManagerInterface):
             # Converts Pydantic model to a dictionary.
             # Excludes any fields that were not provided (unset) in the request.
             # Uses the exclude_unset=True pydantic method
-            for key, value in profile_data_to_update.model_dump(exclude_unset=True).items():
+            # Simplified update loop
+            update_data = profile_data_to_update.model_dump(exclude_unset=True)
+            for key, value in update_data.items():
                 if isinstance(value, HttpUrl):
                     setattr(profile, key, str(value))
-                elif isinstance(value, list):  # Check if it's a list first
-                    # Check for list of HttpUrl
-                    if all(isinstance(item, HttpUrl) for item in value):
-                        setattr(profile, key, [str(item) for item in value])
-                    # Check for list of TitleAndUrl
-                    elif all(isinstance(item, TitleAndUrl) for item in value):
-                        # It's stored as a list of dicts:
-                        setattr(profile, key, [item.model_dump() for item in value])
-                    else:
-                        # If there are other list types, handle them or raise error
-                        setattr(profile, key, value)  # Fallback for other list types
+                elif isinstance(value, list) and all(isinstance(item, TitleAndUrl) for item in value):
+                    setattr(profile, key, [item.model_dump() for item in value])
                 else:
-                    # For all other scalar types (str, int, bool, etc.)
+                    # This handles all other types, including lists of HttpUrl or other scalar types.
+                    # SQLAlchemy and Pydantic will often handle the rest.
                     setattr(profile, key, value)
 
             db.commit()
