@@ -14,11 +14,11 @@ services:
     environment:
       - SERVER_PWD="Gabo_p"
       - DATABASE_URL=postgresql://postgres:Gabo_p@db:5432/postgres
-      - SECRET_KEY="09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-      - ALGORITHM="HS256"
-      - CLOUDINARY_CLOUD_NAME="dqkdbvnac"
-      - CLOUDINARY_API_KEY="135642772133192"
-      - CLOUDINARY_API_SECRET="1eAuh8WmfFjp7NPgE6nw8eIpSxo"
+      - SECRET_KEY=09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+      - ALGORITHM=HS256
+      - CLOUDINARY_CLOUD_NAME=dqkdbvnac
+      - CLOUDINARY_API_KEY=135642772133192
+      - CLOUDINARY_API_SECRET=1eAuh8WmfFjp7NPgE6nw8eIpSxo
     ports:
       - "8000:8000"
     volumes:

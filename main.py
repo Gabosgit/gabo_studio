@@ -37,10 +37,17 @@ app.include_router(events.router)
 app.include_router(accommodations.router)
 app.include_router(uploads.router)
 
+# Define the allowed origins for your frontend
+origins = [
+    "http://localhost:5173",   # Explicitly allow localhost for frontend
+    "http://127.0.0.1:5173",   # Explicitly allow 127.0.0.1 for frontend using docker
+    # Add any other origins that the frontend might use, e.g., if having other test environments
+]
+
 # Allow requests from your frontend (adjust origins as needed)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # React frontend
+    allow_origins=origins,  # React frontend
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
