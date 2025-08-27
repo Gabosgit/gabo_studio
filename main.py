@@ -5,7 +5,8 @@ from fastapi import FastAPI, APIRouter
 from fastapi.responses import HTMLResponse
 import uvicorn
 
-# To allow requests from a react app
+# middleware: to handle CORS policy (Cross-Origin Resource Sharing)
+# Access-Control-Allow-Origin allows requests from a react app
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.datamanager.exceptions_handler import register_exception_handlers, handle_exceptions
@@ -37,17 +38,17 @@ app.include_router(events.router)
 app.include_router(accommodations.router)
 app.include_router(uploads.router)
 
-# Define the allowed origins for your frontend
+# Define the allowed origins list for frontend requests
 origins = [
     "http://localhost:5173",   # Explicitly allow localhost for frontend
     "http://127.0.0.1:5173",   # Explicitly allow 127.0.0.1 for frontend using docker
     # Add any other origins that the frontend might use, e.g., if having other test environments
 ]
 
-# Allow requests from your frontend (adjust origins as needed)
+# Allows requests from your frontend (adjust origins as needed)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # React frontend
+    allow_origins=origins,  # allowed origins list for frontend (React). ["*"] Allows all origins
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
