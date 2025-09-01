@@ -14,8 +14,8 @@ services:
   web:
     build: ./MVP_backend_track_v1 # Assumes a Dockerfile is in the same directory
     environment:
-      - SERVER_PWD="Gabo_p"
-      - DATABASE_URL=postgresql://postgres:Gabo_p@db:5432/postgres
+      - SERVER_PWD="server_password"
+      - DATABASE_URL=postgresql://postgres:server_password@db:5432/postgres
       - SECRET_KEY=xxx
       - ALGORITHM=HS256
       - CLOUDINARY_CLOUD_NAME=xxx

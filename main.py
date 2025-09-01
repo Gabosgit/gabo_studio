@@ -2,14 +2,13 @@
     API to manage Users, User-Profiles, User_Contracts, User_Events, Uploads and Accommodations
 """
 from fastapi import FastAPI, APIRouter
-from fastapi.responses import HTMLResponse
-import uvicorn
+
 
 # middleware: to handle CORS policy (Cross-Origin Resource Sharing)
-# Access-Control-Allow-Origin allows requests from a react app
+# Access-Control-Allow-Origin allows requests from a React app
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.datamanager.exceptions_handler import register_exception_handlers, handle_exceptions
+from app.datamanager.exceptions_handler import register_exception_handlers
 
 # --- Import your router(s) ---
 from app.api.endpoints import users
