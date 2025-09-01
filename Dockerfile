@@ -10,6 +10,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 # Expose the port that Uvicorn will run on
 EXPOSE 8000
-# Command to run the application using Uvicorn
+# Command to run the application using gunicorn
 # The --host 0.0.0.0 makes the application accessible from outside the container
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# The "alembic upgrade head" command runs all new migrations.
+CMD ["sh", "-c", "alembic upgrade head && gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000"]
+
+# OLD CMD
+# Command to run the application using Uvicorn
+#CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

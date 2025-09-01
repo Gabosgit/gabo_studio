@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:14-alpine
+    ports:
+      - "5431:5432" # Host port 5431 maps to container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Use a named volume here
+    environment:
+      - POSTGRES_PASSWORD=Gabo_p # Make sure this matches the password in DATABASE_URL
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    restart: always # Recommended: Restart if the service crashes
+
+  web:
+    build: ./MVP_backend_track_v1 # Assumes a Dockerfile is in the same directory
+    environment:
+      - SERVER_PWD="Gabo_p"
+      - DATABASE_URL=postgresql://postgres:Gabo_p@db:5432/postgres
+      - SECRET_KEY=xxx
+      - ALGORITHM=HS256
+      - CLOUDINARY_CLOUD_NAME=xxx
+      - CLOUDINARY_API_KEY=xxx
+      - CLOUDINARY_API_SECRET=xxx
+    ports:
+      - "8000:8000" # Host port 8000 now maps to container port 8000
+    volumes:
+      - ./MVP_backend_track_v1:/app # Mount current directory to /app inside the container
+    depends_on:
+      - db # Ensures db starts before web
+    restart: always # Recommended: Restart if the service crashes
+
+  frontend:
+    build:
+      context: ./mvp_v1.0/ # <<< IMPORTANT: Change this to your React app's directory
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:80" # Host port 5173 maps to container's exposed port 80 (Nginx default)
+    depends_on:
+      - web # Ensures the backend is ready before the frontend starts
+    restart: always
+
+# Define the named volume at the root of the file
+volumes:
+  postgres_data:
