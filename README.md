@@ -1,4 +1,4 @@
-# Creative Contract Management API
+# 🎧 Creative Contract Management API
 
 ## Overview
 This API facilitates contract generation in the creative and events industry, connecting performers (musicians, dancers, photographers, etc.) with producers (venues, event organizers, video producers, etc.). The platform enables structured contract creation, event scheduling, and financial tracking.
