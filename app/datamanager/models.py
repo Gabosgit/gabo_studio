@@ -20,6 +20,7 @@ class User(Base):
     __tablename__ = "user"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now()) # func.now() lets the database itself generate the timestamp, in the database's time zone.
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     username: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     type_of_entity: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -56,6 +57,7 @@ class Profile(Base):
     __tablename__ = 'profile'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
     performance_type: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -78,9 +80,9 @@ class Profile(Base):
 
 class Contract(Base):
     __tablename__ = 'contract'
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     offeror_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
     offeree_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
@@ -103,6 +105,7 @@ class Event(Base):
     __tablename__ = 'event'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     contract_id: Mapped[int] = mapped_column(ForeignKey('contract.id'), nullable=False)
     profile_offeror_id: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -128,6 +131,7 @@ class Accommodation(Base):
     __tablename__ = 'accommodation'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     contact_person: Mapped[str] = mapped_column(String(255), nullable=True)
     address: Mapped[str] = mapped_column(String(255), nullable=False)

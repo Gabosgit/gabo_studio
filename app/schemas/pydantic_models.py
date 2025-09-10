@@ -126,6 +126,7 @@ class TitleAndUrl(BaseModel):
 class ProfilePydantic(BaseModel):
     id: Optional[int] = None # Optional only for READ operations
     created_at: Optional[datetime] = None # Optional only for READ operations
+    updated_at: Optional[datetime] = None  # Optional only for READ operations
     name: str # REQUIRED
     performance_type: str # REQUIRED
     description: str # REQUIRED
@@ -142,10 +143,9 @@ class ProfilePydantic(BaseModel):
     audios: Optional[List[HttpUrl]] = None
 
 
-
-
 class ProfileUpdatePydantic(BaseModel):
     name: Optional[str] = None  # Add = None for clarity and Pydantic v2 consistency for optionality
+    updated_at: Optional[datetime] = None  # Optional only for READ operations
     performance_type: Optional[str] = None
     description: Optional[str] = None
     bio: Optional[str] = None
@@ -160,10 +160,10 @@ class ProfileUpdatePydantic(BaseModel):
     online_press: Optional[List[TitleAndUrl]] = None  # Make the entire list optional
 
 
-
 # CONTRACT MODELS
 class ContractCreatePydantic(BaseModel):
     name: str  # Contract name
+    created_at: Optional[datetime] = None  # Optional only for READ operations
     offeree_id: int
     currency_code: str
     upon_signing: int  # % of total
@@ -174,6 +174,7 @@ class ContractCreatePydantic(BaseModel):
     accommodation_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
     other_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
     total_fee: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)  # Will be auto-filled
+    updated_at: Optional[datetime] = None  # Optional only for READ operations
     disabled: bool = Field(False)  # Default to False
     disabled_at: Optional[datetime] = None
     signed_at: Optional[datetime] = None
@@ -194,6 +195,7 @@ class ContractCreatePydantic(BaseModel):
 
 class ContractPydantic(BaseModel):
     id: Optional[int] = None # Optional for creation, required for return.
+    created_at: Optional[datetime] = None  # Optional only for READ operations
     name: str  # Contract name
     offeror_id: int
     offeree_id: int
@@ -206,6 +208,7 @@ class ContractPydantic(BaseModel):
     accommodation_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
     other_expenses: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)
     total_fee: Optional[Decimal] = Field(default=Decimal(0), decimal_places=2)  # Will be auto-filled
+    updated_at: Optional[datetime] = None  # Optional only for READ operations
     disabled: bool = Field(False)  # Default to False
     disabled_at: Optional[datetime] = None
     signed_at: Optional[datetime] = None
@@ -222,7 +225,6 @@ class ContractPydantic(BaseModel):
             return v
         except ValueError:
             raise ValueError("Invalid ISO 4217 currency code")
-
 
 
 class ContractUpdatePydantic(BaseModel):
@@ -278,6 +280,7 @@ class ContractUpdatePydantic(BaseModel):
 class EventPydantic(BaseModel):
     id: Optional[int] = None # Optional for creation, required for return.
     created_at: Optional[datetime] = None # format 2026-10-27T16:00:00
+    updated_at: Optional[datetime] = None  # Optional only for READ operations
     name: str  # Event name
     contract_id: int
     profile_offeror_id: int
@@ -323,6 +326,7 @@ class EventPydantic(BaseModel):
 
 class EventUpdatePydantic(BaseModel):
     id: Optional[int] = None # Optional for creation, required for return.
+    updated_at: Optional[datetime] = None  # Optional only for READ operations
     name: Optional[str] = None  # Event name
     contract_id: Optional[int] = None
     profile_offeror_id: Optional[int] = None
@@ -369,6 +373,8 @@ class EventUpdatePydantic(BaseModel):
 # ACCOMMODATION MODELS
 class AccommodationPydantic(BaseModel):
     id: Optional[int] = None # Optional for creation, required for return.
+    created_at: Optional[datetime] = None  # Optional only for READ operations
+    updated_at: Optional[datetime] = None  # Optional only for READ operations
     name: str
     contact_person: str
     address: str
@@ -389,6 +395,7 @@ class AccommodationPydantic(BaseModel):
 
 class AccommodationUpdatePydantic(BaseModel):
     name: Optional[str]
+    updated_at: Optional[datetime] = None  # Optional only for READ operations
     contact_person: Optional[str]
     address: Optional[str]
     telephone_number: Optional[str]
