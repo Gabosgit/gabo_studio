@@ -130,19 +130,18 @@ class ProfilePydantic(BaseModel):
     performance_type: str # REQUIRED
     description: str # REQUIRED
     bio: str # REQUIRED
-    social_media: Optional[List[HttpUrl]] = None
     stage_plan: Optional[HttpUrl] = None
     tech_rider: Optional[HttpUrl] = None
+    website: Optional[HttpUrl] = None  # make website optional.
 
-    # all items in it must be valid URLs, and it allows for the field to be completely absent
-    # or null if no photos are associated with the profile.
+    # Each item will be an instance of TitleAndUrl
+    online_press: Optional[List[TitleAndUrl]] = None  # Make the entire list optional
+    social_media: Optional[List[HttpUrl]] = None
     photos: Optional[List[HttpUrl]] = None
     videos: Optional[List[HttpUrl]] = None
     audios: Optional[List[HttpUrl]] = None
 
-    # Each item will be an instance of TitleAndUrl
-    online_press: Optional[List[TitleAndUrl]] = None  # Make the entire list optional
-    website: Optional[HttpUrl] = None  # make website optional.
+
 
 
 class ProfileUpdatePydantic(BaseModel):
@@ -150,14 +149,16 @@ class ProfileUpdatePydantic(BaseModel):
     performance_type: Optional[str] = None
     description: Optional[str] = None
     bio: Optional[str] = None
-    social_media: Optional[List[HttpUrl]] = None  # Assuming you want to omit the list or clear it
     stage_plan: Optional[HttpUrl] = None
     tech_rider: Optional[HttpUrl] = None
+    website: Optional[HttpUrl] = None
+
+    social_media: Optional[List[HttpUrl]] = None  # Assuming you want to omit the list or clear it
     photos: Optional[List[HttpUrl]] = None
     videos: Optional[List[HttpUrl]] = None
     audios: Optional[List[HttpUrl]] = None
     online_press: Optional[List[TitleAndUrl]] = None  # Make the entire list optional
-    website: Optional[HttpUrl] = None
+
 
 
 # CONTRACT MODELS
