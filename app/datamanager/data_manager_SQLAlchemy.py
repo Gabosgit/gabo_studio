@@ -317,7 +317,6 @@ class SQLAlchemyDataManager(DataManagerInterface):
             db.rollback()
             raise e
 
-
     def get_profile_by_id(self, profile_id: int, db: Session) -> Optional[ProfilePydantic] | None:
         """
             Retrieves a profile by ID.
@@ -347,42 +346,37 @@ class SQLAlchemyDataManager(DataManagerInterface):
         else:
             return None
 
-
     def update_profile(
-            self, profile_id: int,
+            self,
+            profile_id: int,
             profile_data_to_update: ProfileUpdatePydantic,
             current_user_id,
-            db: Session)\
-            -> Optional[ProfilePydantic]:
+            db: Session
+    ) -> Optional[ProfilePydantic]:
 
-            profile = db.query(Profile).filter(Profile.id == profile_id).first()
+        profile = db.query(Profile).filter(Profile.id == profile_id).first()
 
-            if not profile:
-                raise ResourceNotFoundException(resource_name="Profile", resource_id=profile_id)
+        if not profile:
+            raise ResourceNotFoundException(resource_name="Profile", resource_id=profile_id)
 
-            if profile.user_id != current_user_id:
-                raise ResourceUserMismatchException(resource_name="Profile", resource_id=profile_id, user_id=current_user_id)
+        if profile.user_id != current_user_id:
+            raise ResourceUserMismatchException(resource_name="Profile", resource_id=profile_id,
+                                                user_id=current_user_id)
 
-            # Converts Pydantic model to a dictionary.
-            # Excludes any fields that were not provided (unset) in the request.
-            # Uses the exclude_unset=True pydantic method
-            # Simplified update loop
-            update_data = profile_data_to_update.model_dump(exclude_unset=True)
-            for key, value in update_data.items():
-                if isinstance(value, HttpUrl):
-                    setattr(profile, key, str(value))
-                elif isinstance(value, list) and all(isinstance(item, TitleAndUrl) for item in value):
-                    setattr(profile, key, [item.model_dump() for item in value])
-                else:
-                    # This handles all other types, including lists of HttpUrl or other scalar types.
-                    # SQLAlchemy and Pydantic will often handle the rest.
-                    setattr(profile, key, value)
+        # Use model_dump with mode='json' to convert Pydantic objects to standard types
+        update_data = profile_data_to_update.model_dump(
+            exclude_unset=True,
+            mode='json'
+        )
 
-            db.commit()
-            db.refresh(profile)
+        for key, value in update_data.items():
+            setattr(profile, key, value)
 
-            profile_data = self.get_profile_by_id(profile_id, db)
-            return profile_data
+        db.commit()
+        db.refresh(profile)
+
+        profile_data = self.get_profile_by_id(profile_id, db)
+        return profile_data
 
     def delete_profile(self, profile_id: int, current_user_id: int, db: Session) -> bool:
 
