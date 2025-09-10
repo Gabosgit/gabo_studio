@@ -224,13 +224,18 @@ class SQLAlchemyDataManager(DataManagerInterface):
         :param db: database
         :return: JSON with a List of dictionaries with profile ID and name
         """
-        profiles = db.query(Profile.id, Profile.name, Profile.performance_type).filter(Profile.user_id == user_id).all()
+        profiles = db.query(Profile.id, Profile.name, Profile.performance_type, Profile.updated_at).filter(Profile.user_id == user_id).all()
 
         if not profiles:
             return profiles
 
         if profiles:
-            return [{"id": profile.id, "name": profile.name, "performance_type": profile.performance_type} for profile in profiles]
+            return [{
+                "id": profile.id,
+                "name": profile.name,
+                "performance_type": profile.performance_type,
+                "updated_at": profile.updated_at
+            } for profile in profiles]
 
         else:
             return None
